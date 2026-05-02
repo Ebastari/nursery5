@@ -24,7 +24,7 @@ export function VerifyScreen() {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handler untuk impor gambar — gunakan Html5Qrcode.scanFile untuk decode QR
+  // Handler untuk impor gambar — gunakan Html5Qrcode instance.scanFile untuk decode QR
   const handleImportImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -32,8 +32,17 @@ export function VerifyScreen() {
     setErrorMsg('');
     setScannedCode('');
     setResult(null);
+
+    // scanFile adalah instance method, buat container sementara agar constructor tidak error
+    const tempId = `qr-tmp-${Date.now()}`;
+    const tempEl = document.createElement('div');
+    tempEl.id = tempId;
+    tempEl.style.display = 'none';
+    document.body.appendChild(tempEl);
+
     try {
-      const decodedText = await Html5Qrcode.scanFile(file, false);
+      const scanner = new Html5Qrcode(tempId);
+      const decodedText = await scanner.scanFile(file, false);
       let code = decodedText.trim();
       // Handle URL format: https://...?kode=XXX atau ?verify=XXX
       const urlMatch = code.match(/[?&](?:kode|verify)=([^&]+)/);
@@ -46,6 +55,8 @@ export function VerifyScreen() {
     } catch {
       setScanState('error');
       setErrorMsg('QR Code tidak terbaca dari gambar. Pastikan gambar jelas dan berisi QR Code yang valid.');
+    } finally {
+      document.body.removeChild(tempEl);
     }
     event.target.value = '';
   };
