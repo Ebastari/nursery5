@@ -16,7 +16,7 @@ const navItems = [
 
 const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
-
+  '/input': 'Input Bibit',
   '/stock': 'Stok Bibit',
   '/performance': 'Kinerja Nursery',
   '/distribution': 'Distribusi',

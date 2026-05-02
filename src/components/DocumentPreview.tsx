@@ -62,7 +62,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 
       const renderContext = {
         canvasContext: context,
-        viewport: viewport
+        viewport: viewport,
+        canvas: canvas,
       };
 
       await page.render(renderContext).promise;
@@ -88,8 +89,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         withCredentials: false,
       });
 
-      pdfDocRef.current = await loadingTask.promise;
-      setNumPages(pdfDocRef.current.numPages);
+      const pdfDoc = await loadingTask.promise;
+      pdfDocRef.current = pdfDoc;
+      setNumPages(pdfDoc.numPages);
       await renderPage();
     } catch (err: unknown) {
       console.error('PDF load error:', err);

@@ -150,7 +150,7 @@ export const api = {
     const plants = derivePlants(rows);
     return deriveAlerts(plants, rows);
   },
-async submitActivity(record: Omit<ActivityRecord, 'id'>): Promise<ActivityRecord & { linkPdf?: string }> {
+async submitActivity(record: Omit<ActivityRecord, 'id'>): Promise<ActivityRecord & { linkPdf?: string; nomorSurat?: string }> {
     // Prepare GAS payload - map fields + ensure tanggal
     const today = new Date().toISOString().split('T')[0];
     const gasPayload = {
@@ -166,7 +166,7 @@ async submitActivity(record: Omit<ActivityRecord, 'id'>): Promise<ActivityRecord
     };
 
     // Direct to Google Apps Script (bypass proxy issues)
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxO4WFEjJVp5rzDOq0zRX3hycgB9zaZ_JB6vfM2gqxuwf7Qq46MjrojF_j1O8px4OV0/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbz1ihQ483EsmV-f7foHSVe5EJrxQ-l4_pC4tjUM5Ah27uaCc5oiecKupH450_LlvWwc/exec';
     // Google Apps Script CORS workaround: gunakan text/plain untuk hindari preflight
     const res = await fetch(GAS_URL, {
       method: 'POST',
@@ -176,8 +176,12 @@ async submitActivity(record: Omit<ActivityRecord, 'id'>): Promise<ActivityRecord
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Gagal menyimpan data');
-    _clear();
-    return { ...record, id: `ACT-${json.row || Date.now()}`, linkPdf: json.linkPdf || '' };
+    return {
+      ...record,
+      id: `ACT-${json.row || Date.now()}`,
+      nomorSurat: json.nomorSurat || '',
+      linkPdf: json.linkPdf || '',
+    };
   },
   async generateDocument(shipmentId: string): Promise<Document> {
     // Generate dokumen dengan pdfUrl random

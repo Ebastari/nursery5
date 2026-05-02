@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+﻿import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Loader2, Zap, ArrowLeft, Check, FileText, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -164,6 +164,69 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agent]);
 
+  // ── Submit data ──
+  const handleSubmit = useCallback(async () => {
+    setSubmitting(true);
+    setStep('submitting');
+    addMsg('bot', 'Menyimpan dan mengirim data...');
+
+    try {
+      const tanggal = new Date().toISOString().split('T')[0];
+      const record = {
+        tanggal,
+        bibit: formData.bibit,
+        masuk: formData.action === 'masuk' ? Number(formData.jumlah) : 0,
+        keluar: formData.action === 'keluar' ? Number(formData.jumlah) : 0,
+        mati: formData.action === 'mati' ? Number(formData.jumlah) : 0,
+        sumber: formData.sumber,
+        tujuan: formData.tujuan,
+        dibuatOleh: formData.dibuatOleh,
+        driver: formData.driver,
+      };
+
+      const result = await api.submitActivity(record);
+      const successStep = getSuccessStep(formData);
+      const successMsg = getSuccessMessage(formData);
+
+      // Tampilkan ringkasan data + link PDF langsung di chat panel
+      let summary = '';
+      summary += '\u2B50 Data berhasil disimpan! Berikut ringkasan:\n';
+      summary += `Aktivitas: **${formData.action.toUpperCase()}**\n`;
+      summary += `Bibit: **${formData.bibit}**\n`;
+      summary += `Jumlah: **${formData.jumlah}** bibit\n`;
+      summary += `Sumber: **${formData.sumber}**\n`;
+      if (formData.action === 'keluar') {
+        summary += `Tujuan: **${formData.tujuan}**\n`;
+        summary += `Dibuat oleh: **${formData.dibuatOleh}**\n`;
+        summary += `Driver: **${formData.driver}**\n`;
+      }
+      if (result.linkPdf) {
+        setPdfUrl(result.linkPdf);
+        summary += `\n\uD83D\uDCC4 [Surat Jalan (PDF)](${result.linkPdf})`;
+      }
+      addMsg('bot', summary);
+
+      addMsg('bot', successMsg);
+      setStep(successStep);
+    } catch (err: unknown) {
+      addMsg('bot', `Gagal menyimpan data: ${err instanceof Error ? err.message : 'Terjadi kesalahan'}\n\nSilakan coba lagi.`);
+      setStep('confirm');
+    }
+
+    setSubmitting(false);
+  }, [formData, setStep, setSubmitting, addMsg, setPdfUrl]);
+
+  // ── Reset ──
+  const resetAll = useCallback(() => {
+    setFormData({ ...emptyForm });
+    setPdfUrl('');
+    setMessages([]);
+    nextId.current = 0;
+    addMsg('bot', GREETING);
+    setStep('action');
+    setInputValue('');
+  }, [setFormData, setPdfUrl, setMessages, nextId, addMsg, setStep, setInputValue]);
+
   // ── Handle user input (quick reply or text) ──
   const handleInput = useCallback(async (value: string, displayText?: string) => {
     if (submitting || loading) return;
@@ -325,69 +388,6 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
     addMsg('bot', result.message);
     setStep(result.nextStep);
   }, [step, formData, stokMap, submitting, loading, pdfUrl, navigate, onClose, addMsg, agent, options.bibit, handleSubmit, resetAll]);
-
-  // ── Submit data ──
-  const handleSubmit = useCallback(async () => {
-    setSubmitting(true);
-    setStep('submitting');
-    addMsg('bot', 'Menyimpan dan mengirim data...');
-
-    try {
-      const tanggal = new Date().toISOString().split('T')[0];
-      const record = {
-        tanggal,
-        bibit: formData.bibit,
-        masuk: formData.action === 'masuk' ? Number(formData.jumlah) : 0,
-        keluar: formData.action === 'keluar' ? Number(formData.jumlah) : 0,
-        mati: formData.action === 'mati' ? Number(formData.jumlah) : 0,
-        sumber: formData.sumber,
-        tujuan: formData.tujuan,
-        dibuatOleh: formData.dibuatOleh,
-        driver: formData.driver,
-      };
-
-      const result = await api.submitActivity(record);
-      const successStep = getSuccessStep(formData);
-      const successMsg = getSuccessMessage(formData);
-
-      // Tampilkan ringkasan data + link PDF langsung di chat panel
-      let summary = '';
-      summary += '\u2B50 Data berhasil disimpan! Berikut ringkasan:\n';
-      summary += `Aktivitas: **${formData.action.toUpperCase()}**\n`;
-      summary += `Bibit: **${formData.bibit}**\n`;
-      summary += `Jumlah: **${formData.jumlah}** bibit\n`;
-      summary += `Sumber: **${formData.sumber}**\n`;
-      if (formData.action === 'keluar') {
-        summary += `Tujuan: **${formData.tujuan}**\n`;
-        summary += `Dibuat oleh: **${formData.dibuatOleh}**\n`;
-        summary += `Driver: **${formData.driver}**\n`;
-      }
-      if (result.linkPdf) {
-        setPdfUrl(result.linkPdf);
-        summary += `\n\uD83D\uDCC4 [Surat Jalan (PDF)](${result.linkPdf})`;
-      }
-      addMsg('bot', summary);
-
-      addMsg('bot', successMsg);
-      setStep(successStep);
-    } catch (err: unknown) {
-      addMsg('bot', `Gagal menyimpan data: ${err instanceof Error ? err.message : 'Terjadi kesalahan'}\n\nSilakan coba lagi.`);
-      setStep('confirm');
-    }
-
-    setSubmitting(false);
-  }, [formData, setStep, setSubmitting, addMsg, setPdfUrl]);
-
-  // ── Reset ──
-  const resetAll = useCallback(() => {
-    setFormData({ ...emptyForm });
-    setPdfUrl('');
-    setMessages([]);
-    nextId.current = 0;
-    addMsg('bot', GREETING);
-    setStep('action');
-    setInputValue('');
-  }, [setFormData, setPdfUrl, setMessages, nextId, addMsg, setStep, setInputValue]);
 
   // ── Quick replies  ──
   // Quick reply untuk mode info (dashboard)

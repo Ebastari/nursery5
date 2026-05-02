@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './layout/Layout';
 import DashboardScreen from './screens/DashboardScreen';
-import { IframeScreen } from './screens/IframeScreen';
+import { InputFormScreen } from './screens/InputFormScreen';
 import { StockScreen } from './screens/StockScreen';
 import { DistributionScreen } from './screens/DistributionScreen';
 import { DocumentScreen } from './screens/DocumentScreen';
@@ -17,7 +17,7 @@ function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<DashboardScreen />} />
-          <Route path="/input" element={<IframeScreen />} />
+          <Route path="/input" element={<InputFormScreen />} />
           <Route path="/stock" element={<StockScreen />} />
           <Route path="/performance" element={<PerformanceScreen />} />
           <Route path="/distribution" element={<DistributionScreen />} />

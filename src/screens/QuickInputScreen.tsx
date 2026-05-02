@@ -1,10 +1,7 @@
-import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { ExternalLink, Smartphone } from 'lucide-react';
 
 export function QuickInputScreen() {
-  const navigate = useNavigate();
-
   const handleOpenAppSheet = () => {
     window.open('https://www.appsheet.com/start/0c6e4948-4c31-419f-a1d7-d6d897d4d742?platform=desktop#appName=Nurseryapkbaru-863683625&vss=H4sIAAAAAAAAA6WPMU_DMBCF_8vNzuAmNNQjiKFC7QJiwQyOfZZOpHYVX4Aq8n_HbkHMFeN7p-_dewt8EH4-sbHvoF6XP_WIJ1CwaHg-HVGD0nAfA09x1CA07M3hYt7RQKwhQ34TvzBjArVcwap__BVADgOTJ5xqUMVKwA9UzhUpxhmALOAwsxlGPPesAKVteHDEu-iK5mlGATyZkIxlimHrCty21q03_aaRVsqmk75thhvpm1vXd6t-7Tqz6iDnku6jnRO6lzLn2hm1x9fRBHdp4s2YMH8D838wCqABAAA=&view=Bibit', '_blank');
   };

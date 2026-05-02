@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.2.4",
     "@tailwindcss/vite": "^4.2.2",
     "@types/qrcode": "^1.5.6",
     "@types/react-pdf": "^5.0.7",
@@ -28,6 +29,7 @@
     "react-router-dom": "^7.14.0",
     "recharts": "^3.8.1",
     "tailwindcss": "^4.2.2",
+    "tesseract.js": "^7.0.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

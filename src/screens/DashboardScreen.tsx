@@ -1,288 +1,327 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { RefreshCw, MessageCircle } from 'lucide-react';
+import {
+  RefreshCw, MessageCircle, TrendingUp, Package,
+  ArrowDownCircle, ArrowUpCircle, MinusCircle,
+  FileText, ExternalLink, ChevronDown, ChevronUp,
+} from 'lucide-react';
 import { Card } from '../components/Card';
 import { ChatbotPanel } from '../components/chatbot/ChatbotPanel';
-// ...hapus ApprovalModal...
 import { useStore } from '../store/useStore';
 import { useOnlineStatus } from '../data/useOnlineStatus';
-import { loadPerformanceData, getPerformanceData } from '../data/performanceData';
 import { fetchApiData, invalidateCache } from '../data/api';
 import type { ApiRow } from '../data/api';
+import { derivePlants } from '../data/mockData';
 import { CalendarHeatmap } from '../components/CalendarHeatmap';
 
+interface SuratJalanItem {
+  nomorSurat: string;
+  tanggal: string;
+  bibit: string;
+  keluar: number;
+  tujuan: string;
+  linkPdf: string;
+}
+
+interface DashboardStats {
+  totalStok: number;
+  totalMasuk: number;
+  totalKeluar: number;
+  totalMati: number;
+  jumlahJenis: number;
+  topBibit: { nama: string; stok: number; percent: number }[];
+  dailyKeluar: { tanggal: string; total: number }[];
+  suratJalan: SuratJalanItem[];
+}
+
+function formatTanggal(t: string) {
+  const d = new Date(t);
+  if (isNaN(d.getTime())) return t;
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 const DashboardScreen: React.FC = () => {
-  // ...existing code...
   const { refreshAll } = useStore();
   const [chatOpen, setChatOpen] = useState(false);
-  // ...hapus state ApprovalModal...
   const [refreshing, setRefreshing] = useState(false);
   const isOnline = useOnlineStatus();
-  const [bibitStats, setBibitStats] = useState<{nama: string, jumlah: number, percent: number}[]>([]);
-  const [loadingStats, setLoadingStats] = useState(true);
-  const [errorStats, setErrorStats] = useState<string | null>(null);
-  const selectedTim = "Basri";
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAllSurat, setShowAllSurat] = useState(false);
 
-  useEffect(() => {
-    loadPerformanceData().then(() => {
-      getPerformanceData('Semua');
-      // setPerfData(data); // Hapus, variabel tidak ada
-    });
-  }, []);
+  const loadStats = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const rows: ApiRow[] = await fetchApiData();
+      const plants = derivePlants(rows);
 
-  useEffect(() => {
-        invalidateCache(); // Clear cache first
-        const loadBibitStats = async () => {
-      try {
-        setLoadingStats(true);
-        setErrorStats(null);
-        const allRows: ApiRow[] = await fetchApiData();
+      const totalMasuk = rows.reduce((s, r) => s + (r.masuk || 0), 0);
+      const totalKeluar = rows.reduce((s, r) => s + (r.keluar || 0), 0);
+      const totalMati = rows.reduce((s, r) => s + (r.mati || 0), 0);
+      const totalStok = plants.reduce((s, p) => s + p.stock, 0);
 
-        // Debug: log unique tujuan values
-        console.log('[DEBUG] All unique tujuan:', [...new Set(allRows.map(r => r.tujuan).filter(Boolean))]);
-        console.log('[DEBUG] Total rows:', allRows.length);
-        
-        // Show rows with keluar > 0
-        const rowsWithKeluar = allRows.filter(r => r.keluar && r.keluar > 0);
-        console.log('[DEBUG] Rows with keluar > 0:', rowsWithKeluar.length);
-        console.log('[DEBUG] Sample keluar rows:', rowsWithKeluar.slice(0, 5).map(r => ({bibit: r.bibit, tujuan: r.tujuan, keluar: r.keluar})));
+      const dailyMap = new Map<string, number>();
+      rows.forEach(r => {
+        if (r.keluar > 0) {
+          dailyMap.set(r.tanggal, (dailyMap.get(r.tanggal) || 0) + r.keluar);
+        }
+      });
+      const dailyKeluar = Array.from(dailyMap, ([tanggal, total]) => ({ tanggal, total }));
 
-        // Filter by TIM + nama (sama seperti chatbot)
-        const timName = selectedTim.toUpperCase();
-        console.log('[DEBUG] Searching for:', 'TIM ' + timName);
-        
-        const filteredByTim = allRows.filter((row: ApiRow) => {
-          if (!row.tujuan || !row.keluar || row.keluar <= 0) return false;
-          const tujuanUpper = row.tujuan.toUpperCase();
-          return tujuanUpper.includes('TIM ' + timName) || tujuanUpper.includes(timName);
-        });
+      const topBibit = plants.slice(0, 6).map(p => ({
+        nama: p.name,
+        stok: p.stock,
+        percent: totalStok > 0 ? Math.round((p.stock / totalStok) * 1000) / 10 : 0,
+      }));
 
-        console.log('[DEBUG] Filtered by Tim Basri:', filteredByTim.length);
-        console.log('[DEBUG] Sample filtered:', filteredByTim.slice(0, 3));
-
-        // Daily keluar data for calendar
-        const dailyMap = new Map<string, number>();
-        filteredByTim.forEach((row: ApiRow) => {
-          const dateKey = row.tanggal;
-          dailyMap.set(dateKey, (dailyMap.get(dateKey) || 0) + (row.keluar || 0));
-        });
-        const dailyData = Array.from(dailyMap, ([tanggal, total]) => ({ tanggal, total }));
-        setDailyKeluarData(dailyData);
-
-        // Bibit stats - Distribusi ke Tim Basri (sama seperti chatbot)
-        const bibitMap = new Map<string, number>();
-        filteredByTim.forEach((row: ApiRow) => {
-          const key = row.bibit?.toUpperCase().trim();
-          if (key) {
-            bibitMap.set(key, (bibitMap.get(key) || 0) + (row.keluar || 0));
-          }
-        });
-
-        let bibitList = Array.from(bibitMap, ([nama, jumlah]) => ({ 
-          nama, 
-          jumlah: Number(jumlah),
-          percent: 0 
+      // Ambil semua baris yang punya linkPdf (Merged Doc URL - aplikasi qr)
+      const suratJalan: SuratJalanItem[] = rows
+        .filter(r => r.linkPdf && r.linkPdf.trim().startsWith('http'))
+        .sort((a, b) => b.tanggal.localeCompare(a.tanggal))
+        .map(r => ({
+          nomorSurat: r.nomorSurat || '-',
+          tanggal: r.tanggal,
+          bibit: r.bibit || '-',
+          keluar: r.keluar || 0,
+          tujuan: r.tujuan || '-',
+          linkPdf: r.linkPdf!,
         }));
-        const totalBibit = bibitList.reduce((sum, b) => sum + b.jumlah, 0);
 
-        console.log('[DEBUG] Bibit stats:', bibitList);
-
-        bibitList = bibitList
-          .map(b => ({
-            ...b,
-            percent: totalBibit > 0 ? Math.round((b.jumlah / totalBibit) * 100 * 10) / 10 : 0
-          }))
-          .sort((a, b) => b.jumlah - a.jumlah);
-          // Removed .slice(0, 5) to show ALL bibit distribusi for Tim Basri
-
-        setBibitStats(bibitList);
-      } catch (err) {
-        setErrorStats(`Gagal memuat data: ${(err as Error).message}`);
-        setBibitStats([]);
-        setDailyKeluarData([]);
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-
-    loadBibitStats();
+      setStats({ totalStok, totalMasuk, totalKeluar, totalMati, jumlahJenis: plants.length, topBibit, dailyKeluar, suratJalan });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const totalBibit = bibitStats.reduce((sum, b) => sum + b.jumlah, 0);
-  const insight = bibitStats.length > 0
-    ? `${bibitStats[0].nama} mendominasi ${bibitStats[0].percent.toFixed(1)}% distribusi Tim Basri`
-    : 'Belum ada data distribusi Tim Basri';
-
-  const [dailyKeluarData, setDailyKeluarData] = useState<{tanggal: string, total: number}[]>([]);
+  useEffect(() => { loadStats(); }, [loadStats]);
 
   const handleRefresh = async () => {
     if (!isOnline || refreshing) return;
     setRefreshing(true);
     invalidateCache();
     await refreshAll();
+    await loadStats();
     setRefreshing(false);
   };
 
   return (
     <>
-      <div className="min-h-screen p-4 max-w-5xl mx-auto space-y-4">
+      <div className="min-h-screen p-4 max-w-5xl mx-auto space-y-4 pb-24">
 
         {/* HEADER */}
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">Dashboard Bibit</h1>
-          <div className="flex gap-2">
-            <button onClick={handleRefresh} className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center">
-              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
-            {/* Tombol admin Shield dinonaktifkan sementara untuk mencegah error build */}
-            {/* <button onClick={() => setShowAdminModal(true)} className="w-10 h-10 bg-amber-500 text-white rounded-xl flex items-center justify-center">
-              <Shield className="w-5 h-5" />
-            </button> */}
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Dashboard Bibit</h1>
+            <p className="text-xs text-gray-400">Unit Nursery — Kalimantan Selatan</p>
           </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing || !isOnline}
+            className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center disabled:opacity-50 transition-opacity"
+          >
+            <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
-        {/* 🔥 HERO SECTION */}
-        {loadingStats ? (
-          <Card className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/80 to-teal-600/80 text-white shadow-lg flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-          </Card>
-        ) : errorStats ? (
-          <Card className="p-5 rounded-2xl bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg">
-            <div className="text-center">
-              <p className="text-sm mb-2">{errorStats}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="px-3 py-1 bg-white/20 rounded-lg text-xs hover:bg-white/30 transition-colors"
-              >
-                Muat ulang
-              </button>
-            </div>
-          </Card>
-        ) : (
-          <Card className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-2xl">
-            <div className="flex justify-between items-center">
-
-              <div>
-                <div className="text-xs opacity-80">Tim Aktif</div>
-                <div className="text-lg font-bold">Tim {selectedTim}</div>
-
-                <div className="mt-2 text-2xl font-black">
-                  {totalBibit.toLocaleString('id-ID')}
-                </div>
-
-                <div className="text-xs opacity-80">Total Distribusi Tim Basri 2026</div>
-              </div>
-
-              <div className="text-right">
-                <div className="text-xs opacity-80">Top Bibit</div>
-                <div className="text-lg font-bold">
-                  {bibitStats[0]?.nama || '-'}
-                </div>
-                <div className="text-sm opacity-80">
-                  {bibitStats[0]?.percent?.toFixed(1) || '0'}%
-                </div>
-              </div>
-
-            </div>
-          </Card>
-        )}
-
-        {/* 🔥 TOP METRICS */}
-        <div className="grid grid-cols-3 gap-3">
-
-          <Card className="p-3 text-center transition-all hover:scale-[1.02] hover:shadow-md">
-            <div className="text-xs text-gray-500">Total Bibit 2026</div>
-            <div className="text-lg font-bold">{totalBibit.toLocaleString('id-ID')}</div>
-          </Card>
-
-          <Card className="p-3 text-center transition-all hover:scale-[1.02] hover:shadow-md">
-            <div className="text-xs text-gray-500">Jenis</div>
-            <div className="text-lg font-bold">{bibitStats.length}</div>
-          </Card>
-
-          <Card className="p-3 text-center transition-all hover:scale-[1.02] hover:shadow-md">
-            <div className="text-xs text-gray-500">Dominasi</div>
-            <div className="text-lg font-bold">{(bibitStats[0]?.percent || 0).toFixed(0)}%</div>
-          </Card>
-
-        </div>
-
-        {/* 🔥 DISTRIBUSI */}
-        <Card className="p-4 rounded-2xl transition-all hover:scale-[1.02] hover:shadow-md">
-
-          <div className="text-sm font-bold mb-3">Distribusi Tim Basri</div>
-
+        {loading ? (
           <div className="space-y-4">
-            {bibitStats.map((b, i) => (
-              <div key={b.nama} className="space-y-1">
-
-                <div className="flex justify-between text-xs">
-                  <span className="flex items-center gap-2">
-                    <span className="text-gray-400">#{i + 1}</span>
-                    {b.nama}
-                  </span>
-                  <span>{b.percent.toFixed(1)}%</span>
-                </div>
-
-                <div className="relative w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-
-                  <div
-                    className="absolute h-3 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
-                    style={{ width: `${b.percent}%` }}
-                  />
-
-                </div>
-
-                <div className="text-[10px] text-gray-500">
-                  {b.jumlah.toLocaleString('id-ID')} bibit
-                </div>
-
-              </div>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-24 rounded-2xl bg-gray-100 animate-pulse" />
             ))}
           </div>
+        ) : error ? (
+          <Card className="p-5 rounded-2xl bg-red-50 border border-red-200">
+            <p className="text-sm text-red-600 mb-3">{error}</p>
+            <button
+              onClick={loadStats}
+              className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-semibold"
+            >
+              Coba Lagi
+            </button>
+          </Card>
+        ) : stats ? (
+          <>
+            {/* HERO — Total Stok */}
+            <Card className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="text-xs opacity-80 mb-1">Total Stok Bibit</div>
+                  <div className="text-4xl font-black tracking-tight">
+                    {stats.totalStok.toLocaleString('id-ID')}
+                  </div>
+                  <div className="text-xs opacity-80 mt-1">polybag tersedia</div>
+                </div>
+                <div className="text-right">
+                  <Package className="w-12 h-12 opacity-30 ml-auto mb-1" />
+                  <div className="text-xs opacity-80">Jenis Bibit</div>
+                  <div className="text-2xl font-bold">{stats.jumlahJenis}</div>
+                </div>
+              </div>
+            </Card>
 
-        </Card>
-
-        {/* 🔥 INSIGHT */}
-        <Card className="p-4 rounded-2xl bg-gray-50 border border-gray-200 transition-all hover:scale-[1.02] hover:shadow-md">
-
-          <div className="text-xs text-gray-500 mb-1">Insight</div>
-
-          <div className="text-sm font-medium" dangerouslySetInnerHTML={{__html: insight.replace('%', '<span class="text-emerald-600 font-bold">%</span>')}} />
-
-        </Card>
-
-        {/* 🔥 MONTHLY KALENDER KELUAR */}
-        <Card className="p-6 rounded-2xl border border-gray-200 transition-all hover:scale-[1.02] hover:shadow-md">
-          <div className="text-sm font-bold mb-4 text-gray-800">Pengeluaran Harian Tim {selectedTim}</div>
-          {dailyKeluarData.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <div className="text-lg mb-2">📅</div>
-              <p className="text-sm">Belum ada data harian untuk bulan ini</p>
+            {/* METRICS 3 kolom */}
+            <div className="grid grid-cols-3 gap-3">
+              <Card className="p-3 text-center">
+                <ArrowDownCircle className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+                <div className="text-[10px] text-gray-500">Total Masuk</div>
+                <div className="text-base font-bold text-gray-900">
+                  {stats.totalMasuk.toLocaleString('id-ID')}
+                </div>
+              </Card>
+              <Card className="p-3 text-center">
+                <ArrowUpCircle className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+                <div className="text-[10px] text-gray-500">Total Keluar</div>
+                <div className="text-base font-bold text-gray-900">
+                  {stats.totalKeluar.toLocaleString('id-ID')}
+                </div>
+              </Card>
+              <Card className="p-3 text-center">
+                <MinusCircle className="w-5 h-5 text-rose-400 mx-auto mb-1" />
+                <div className="text-[10px] text-gray-500">Total Mati</div>
+                <div className="text-base font-bold text-gray-900">
+                  {stats.totalMati.toLocaleString('id-ID')}
+                </div>
+              </Card>
             </div>
-          ) : (
-            <CalendarHeatmap data={dailyKeluarData} />
-          )}
-        </Card>
 
-        {/* AI */}
-        <Card onClick={() => setChatOpen(true)} className="p-4 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="w-5 h-5" />
-            <div>
-              <div className="font-semibold text-sm">Montana AI</div>
-              <div className="text-xs text-gray-500">Analisis data bibit</div>
-            </div>
-          </div>
-        </Card>
+            {/* TOP BIBIT berdasarkan stok */}
+            <Card className="p-4 rounded-2xl">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <div className="text-sm font-bold text-gray-900">Stok per Jenis Bibit</div>
+              </div>
+              <div className="space-y-3">
+                {stats.topBibit.map((b, i) => (
+                  <div key={b.nama} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-gray-400 w-4">#{i + 1}</span>
+                        <span className="font-medium text-gray-800 truncate max-w-[160px]">{b.nama}</span>
+                      </span>
+                      <span className="text-gray-500 shrink-0">{b.stok.toLocaleString('id-ID')} bibit</span>
+                    </div>
+                    <div className="relative w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="absolute h-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500"
+                        style={{ width: `${b.percent}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
 
+            {/* SURAT JALAN */}
+            <Card className="p-4 rounded-2xl">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-500" />
+                  <div className="text-sm font-bold text-gray-900">Semua Surat Jalan</div>
+                </div>
+                <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded-full">
+                  {stats.suratJalan.length} dokumen
+                </span>
+              </div>
+
+              {stats.suratJalan.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Belum ada surat jalan dengan PDF</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {(showAllSurat ? stats.suratJalan : stats.suratJalan.slice(0, 5)).map((sj, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors"
+                      >
+                        {/* Icon */}
+                        <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                          <FileText className="w-4 h-4 text-blue-600" />
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] font-bold text-gray-800 font-mono truncate">
+                              {sj.nomorSurat !== '-' ? sj.nomorSurat : `Distribusi ${sj.bibit}`}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+                            {formatTanggal(sj.tanggal)}
+                            {sj.bibit !== '-' && <> &middot; {sj.bibit}</>}
+                            {sj.keluar > 0 && <> &middot; {sj.keluar.toLocaleString('id-ID')} polybag</>}
+                          </div>
+                          {sj.tujuan !== '-' && (
+                            <div className="text-[10px] text-blue-600 truncate mt-0.5">{sj.tujuan}</div>
+                          )}
+                        </div>
+
+                        {/* Tombol PDF */}
+                        <a
+                          href={sj.linkPdf}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-[11px] font-semibold hover:bg-blue-700 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          PDF
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+
+                  {stats.suratJalan.length > 5 && (
+                    <button
+                      onClick={() => setShowAllSurat(v => !v)}
+                      className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-gray-200 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                      {showAllSurat ? (
+                        <><ChevronUp className="w-3.5 h-3.5" /> Tampilkan lebih sedikit</>
+                      ) : (
+                        <><ChevronDown className="w-3.5 h-3.5" /> Lihat semua {stats.suratJalan.length} surat jalan</>
+                      )}
+                    </button>
+                  )}
+                </>
+              )}
+            </Card>
+
+            {/* KALENDER KELUAR HARIAN */}
+            <Card className="p-4 rounded-2xl border border-gray-200">
+              <div className="text-sm font-bold mb-3 text-gray-800">Pengeluaran Harian</div>
+              {stats.dailyKeluar.length === 0 ? (
+                <div className="text-center py-8 text-gray-400 text-sm">Belum ada data pengeluaran</div>
+              ) : (
+                <CalendarHeatmap data={stats.dailyKeluar} />
+              )}
+            </Card>
+
+            {/* AI CHATBOT */}
+            <Card onClick={() => setChatOpen(true)} className="p-4 cursor-pointer hover:shadow-md transition-all">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-sm text-gray-900">Montana AI</div>
+                  <div className="text-xs text-gray-500">Tanya analisis data bibit</div>
+                </div>
+              </div>
+            </Card>
+          </>
+        ) : null}
       </div>
 
       <AnimatePresence>
         {chatOpen && <ChatbotPanel onClose={() => setChatOpen(false)} mode="info" />}
       </AnimatePresence>
-
-      {/* ...hapus ApprovalModal... */}
     </>
   );
 };

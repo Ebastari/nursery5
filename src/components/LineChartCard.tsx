@@ -39,7 +39,7 @@ export default function LineChartCard({ data }: Props) {
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="tanggal" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={50} />
             <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip formatter={(value: number | string) => [Number(value).toLocaleString("id-ID"), "Bibit"]} />
+            <Tooltip formatter={(value) => [Number(value ?? 0).toLocaleString("id-ID"), "Bibit"]} />
             <Area
               type="monotone"
               dataKey="total"

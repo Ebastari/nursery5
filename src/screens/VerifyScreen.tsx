@@ -5,7 +5,6 @@ import { Button } from '../components/Button';
 import { verifyCode } from '../data/api';
 import type { VerifyResult } from '../data/api';
 import { Html5Qrcode } from 'html5-qrcode';
-import Tesseract from 'tesseract.js';
 
 function formatTanggal(tanggal: string): string {
   const d = new Date(tanggal);
@@ -25,7 +24,7 @@ export function VerifyScreen() {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handler untuk impor gambar
+  // Handler untuk impor gambar — gunakan Html5Qrcode.scanFile untuk decode QR
   const handleImportImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -34,27 +33,19 @@ export function VerifyScreen() {
     setScannedCode('');
     setResult(null);
     try {
-      const { data } = await Tesseract.recognize(file, 'eng');
-      const text = data.text.trim();
-      if (text) {
-        // Coba cari kode verifikasi dari hasil OCR
-        // Misal: kode berupa string setelah 'VERIFY:'
-        let code = '';
-        const match = text.match(/VERIFY:([A-Za-z0-9\-]+)/);
-        if (match) {
-          code = match[1];
-        } else {
-          // fallback: ambil semua teks
-          code = text;
-        }
-        handleVerify(code);
-      } else {
-        setScanState('error');
-        setErrorMsg('Teks tidak terbaca dari gambar.');
+      const decodedText = await Html5Qrcode.scanFile(file, false);
+      let code = decodedText.trim();
+      // Handle URL format: https://...?kode=XXX atau ?verify=XXX
+      const urlMatch = code.match(/[?&](?:kode|verify)=([^&]+)/);
+      if (urlMatch) {
+        code = decodeURIComponent(urlMatch[1]);
+      } else if (code.startsWith('VERIFY:')) {
+        code = code.substring(7);
       }
-    } catch (err) {
+      handleVerify(code);
+    } catch {
       setScanState('error');
-      setErrorMsg('Gagal membaca gambar.');
+      setErrorMsg('QR Code tidak terbaca dari gambar. Pastikan gambar jelas dan berisi QR Code yang valid.');
     }
     event.target.value = '';
   };

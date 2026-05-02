@@ -15,6 +15,7 @@ export interface SubmitActivityResponse {
   success: boolean;
   message?: string;
   error?: string;
+  nomorSurat?: string;
   linkPdf?: string;
 }
 
@@ -33,9 +34,10 @@ export async function submitActivity(record: SubmitActivityPayload): Promise<Sub
     dibuat_oleh: record.dibuatOleh || '',
     driver: record.driver || '',
   };
+  // text/plain avoids CORS preflight — GAS cannot respond to OPTIONS requests
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -81,7 +83,7 @@ export interface DropdownOptions {
 
 
 export const API_URL =
-  "https://script.google.com/macros/s/AKfycbxO4WFEjJVp5rzDOq0zRX3hycgB9zaZ_JB6vfM2gqxuwf7Qq46MjrojF_j1O8px4OV0/exec";
+  "https://script.google.com/macros/s/AKfycbz1ihQ483EsmV-f7foHSVe5EJrxQ-l4_pC4tjUM5Ah27uaCc5oiecKupH450_LlvWwc/exec";
 
 let cachedRows: ApiRow[] | null = null;
 
