@@ -142,7 +142,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   loginUser: async (nomorHp, password) => {
     const res = await apiLogin(nomorHp, password);
-    if (!res.success || !res.user || !res.token) return false;
+    if (!res.success || !res.user || !res.token) {
+      throw new Error(res.error || 'Nomor HP atau password salah');
+    }
     const loginAt = new Date().toISOString();
     localStorage.setItem(AUTH_KEY, JSON.stringify({ user: res.user, token: res.token, loginAt }));
     set({ authUser: res.user, authToken: res.token, isLoggedIn: true, isAdmin: res.user.role === 'admin' });

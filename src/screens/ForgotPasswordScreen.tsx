@@ -149,7 +149,7 @@ export function ForgotPasswordScreen() {
         {/* Logo */}
         <div className="text-center">
           <div className="w-16 h-16 rounded-2xl bg-white border border-emerald-100 shadow-lg flex items-center justify-center mx-auto mb-4 overflow-hidden">
-            <img src={COMPANY_LOGO} alt="Logo" className="w-12 h-12 object-contain" />
+            <img src={COMPANY_LOGO} alt="Logo" className="w-12 h-12 object-contain" onError={e => { (e.target as HTMLImageElement).src = '/favicon.svg'; }} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Smart Nursery</h1>
           <p className="text-xs text-gray-500 mt-1">PT Energi Batubara Lestari â€” Unit Nursery</p>

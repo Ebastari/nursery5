@@ -37,7 +37,7 @@ export function Layout() {
       {/* Top Header â€” Premium gradient */}
       <header className="sticky top-0 z-50 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 text-white px-5 flex items-center gap-3.5 h-14 shadow-[0_2px_12px_rgba(5,150,105,0.25)]">
         <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center backdrop-blur-sm overflow-hidden">
-          <img src={COMPANY_LOGO} alt="Logo" className="w-7 h-7 object-contain" />
+          <img src={COMPANY_LOGO} alt="Logo" className="w-7 h-7 object-contain" onError={e => { (e.target as HTMLImageElement).src = '/favicon.svg'; }} />
         </div>
         <h1 className="text-[15px] font-semibold tracking-wide truncate flex-1">{title}</h1>
         <NotificationBell />

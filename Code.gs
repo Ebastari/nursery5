@@ -21,6 +21,9 @@
 //   FONNTE_TOKEN — token dari fonnte.com (untuk OTP via WhatsApp)
 // ============================================================
 
+// ── VERSI ────────────────────────────────────────────────────
+var CODE_VERSION = '2.0.0';
+
 // ── NAMA SHEET ──────────────────────────────────────────────
 var SHEET_DATA    = 'Data';
 var SHEET_USERS   = 'Users';
@@ -125,6 +128,7 @@ function doGet(e) {
     var verify = (params.verify || '').trim();
 
     if (verify)                       return handleVerify(verify);
+    if (action === 'ping')            return jsonOk({ version: CODE_VERSION, timestamp: new Date().toISOString() });
     if (action === 'dropdowns')       return handleGetDropdowns();
     if (action === 'users')           return handleGetUsers();
     if (action === 'listInviteCodes') return handleListInviteCodes();

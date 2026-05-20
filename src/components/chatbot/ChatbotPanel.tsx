@@ -1350,7 +1350,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
         >
           <ArrowLeft className="w-4 h-4 text-gray-400" />
         </button>
-        <img src={LOGO} alt="Montana" className="w-8 h-8 rounded-lg object-contain" />
+        <img src={LOGO} alt="Montana" className="w-8 h-8 rounded-lg object-contain" onError={e => { (e.target as HTMLImageElement).src = '/favicon.svg'; }} />
         <div className="flex-1 min-w-0">
           <h2 className="text-[14px] font-semibold text-white truncate flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-emerald-400" />
