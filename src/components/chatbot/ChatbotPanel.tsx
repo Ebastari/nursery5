@@ -24,7 +24,7 @@ import {
 import { generateSuratJalanPdf } from '../../utils/generateSuratJalanPdf';
 import { api } from '../../data/mockData';
 
-// â”€â”€ Montana AI â€” Data & Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Montana AI "” Data & Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface NoteItem {
   id: number;
@@ -53,17 +53,17 @@ const NOTE_CATS = ['Penyiraman', 'Pemupukan', 'Hama & Penyakit', 'Kondisi Bibit'
 
 const DOSIS_DATA: Record<number, DosisPhase> = {
   1: {
-    label: 'Fase 1 â€” Pembibitan (0â€“4 Minggu)',
+    label: 'Fase 1 "” Pembibitan (0"“4 Minggu)',
     des: 'Prioritas: perkecambahan dan pembentukan akar. Bibit dipindah ke polybag pada hari ke-10 hingga ke-14 saat tinggi sekitar 5 cm.',
     pupuk: [
       { n: 'NPK dasar (dicampur media)', d: '0,5 g/polybag', f: 'Sekali saat pengisian polybag' },
       { n: 'Inokulan Rhizobium', d: '3 g/bibit', f: 'Sekali, dicampur ke media saat transplanting' },
       { n: 'NPK cair N:P:K seimbang', d: '0,5 g/L air', f: '1x/minggu mulai hari ke-10' },
     ],
-    ket: 'Hindari pupuk N tinggi â€” memacu pertumbuhan daun terlalu cepat sehingga akar tidak berkembang optimal. Sumber: Jurnal Biologi Tropis UNRAM 2023.',
+    ket: 'Hindari pupuk N tinggi "” memacu pertumbuhan daun terlalu cepat sehingga akar tidak berkembang optimal. Sumber: Jurnal Biologi Tropis UNRAM 2023.',
   },
   2: {
-    label: 'Fase 2 â€” Pertumbuhan (4â€“8 Minggu)',
+    label: 'Fase 2 "” Pertumbuhan (4"“8 Minggu)',
     des: 'Prioritas: pertumbuhan vegetatif dan pembentukan daun. Kurangi naungan secara bertahap.',
     pupuk: [
       { n: 'Urea + ZA (rasio 1:2)', d: '1 g/polybag', f: 'Tiap 2 minggu' },
@@ -73,24 +73,24 @@ const DOSIS_DATA: Record<number, DosisPhase> = {
     ket: 'Dosis NPK 1 g/polybag terbukti optimal untuk pertumbuhan tinggi sengon di kondisi naungan sedang. Sumber: Jurnal Biologi Tropis UNRAM 2023.',
   },
   3: {
-    label: 'Fase 3 â€” Penguatan (8â€“12 Minggu)',
+    label: 'Fase 3 "” Penguatan (8"“12 Minggu)',
     des: 'Prioritas: penguatan batang dan aklimatisasi. Kurangi naungan untuk hardening.',
     pupuk: [
       { n: 'ZA + NPK Mutiara (rasio 1:1)', d: '1,5 g/polybag', f: 'Tiap 2 minggu' },
-      { n: 'KCl (Kalium Klorida)', d: '0,5â€“1 g/polybag', f: '1x per bulan untuk penguatan batang' },
+      { n: 'KCl (Kalium Klorida)', d: '0,5"“1 g/polybag', f: '1x per bulan untuk penguatan batang' },
       { n: 'POC fosfat tinggi', d: '7 ml/L air', f: 'Tiap 2 minggu untuk perkembangan akar' },
     ],
     ket: 'Kombinasi ZA:NPK:KCl (rasio 1:1:2) memperkuat jaringan batang dan meningkatkan daya tahan saat pindah tanam.',
   },
   4: {
-    label: 'Fase 4 â€” Pra-Tanam (lebih dari 12 Minggu)',
-    des: 'Prioritas: aklimatisasi lapangan. Standar siap tanam: tinggi minimal 25 cm, diameter minimal 5 mm, umur 3â€“3,5 bulan.',
+    label: 'Fase 4 "” Pra-Tanam (lebih dari 12 Minggu)',
+    des: 'Prioritas: aklimatisasi lapangan. Standar siap tanam: tinggi minimal 25 cm, diameter minimal 5 mm, umur 3"“3,5 bulan.',
     pupuk: [
-      { n: 'Pupuk N (Urea/ZA)', d: 'Dihentikan 2 minggu sebelum tanam', f: 'â€”' },
+      { n: 'Pupuk N (Urea/ZA)', d: 'Dihentikan 2 minggu sebelum tanam', f: '"”' },
       { n: 'Dolomit (jika pH < 5,5)', d: '1 sdm/polybag', f: '1x, periksa pH media terlebih dahulu' },
-      { n: 'Mikoriza Arbuskular (AMF)', d: '5â€“10 g/polybag', f: '1x saat pindah tanam ke lubang' },
+      { n: 'Mikoriza Arbuskular (AMF)', d: '5"“10 g/polybag', f: '1x saat pindah tanam ke lubang' },
     ],
-    ket: 'Inokulasi AMF 5â€“10 g/polybag menurunkan insiden penyakit hingga 4x dibanding kontrol. Jangan tanam bibit berumur lebih dari 6 bulan. Sumber: Forest Science and Technology 2024.',
+    ket: 'Inokulasi AMF 5"“10 g/polybag menurunkan insiden penyakit hingga 4x dibanding kontrol. Jangan tanam bibit berumur lebih dari 6 bulan. Sumber: Forest Science and Technology 2024.',
   },
 };
 
@@ -104,11 +104,11 @@ const TROUBLE_DATA: Record<string, TroubleItem> = {
       'Tidak ada perlakuan inokulan hayati pada media',
     ],
     solusi: [
-      'Aplikasi PGPR (Plant Growth Promoting Rhizobacteria) 5x10^6 cfu/kg â€” efektivitas 42,28%, lebih baik dari fungisida kimia',
+      'Aplikasi PGPR (Plant Growth Promoting Rhizobacteria) 5x10^6 cfu/kg "” efektivitas 42,28%, lebih baik dari fungisida kimia',
       'Aplikasi Trichoderma harzianum DT38 atau T. pseudokoningii DT39 sebagai agen hayati',
       'Jika serangan parah: semprot Carbendazim 3 g/L + Mancozeb 3 g/L bergantian tiap minggu',
-      'Cabut dan musnahkan bibit bergejala berat segera â€” jangan distribusikan ke lapangan',
-      'Inokulasi mikoriza arbuskular (AMF) 5â€“10 g/polybag terbukti menekan kejadian penyakit 4x lipat',
+      'Cabut dan musnahkan bibit bergejala berat segera "” jangan distribusikan ke lapangan',
+      'Inokulasi mikoriza arbuskular (AMF) 5"“10 g/polybag terbukti menekan kejadian penyakit 4x lipat',
     ],
   },
   ganoderma: {
@@ -123,7 +123,7 @@ const TROUBLE_DATA: Record<string, TroubleItem> = {
       'Sterilisasi media polybag sebelum digunakan melalui solarisasi atau fumigasi',
       'Aplikasi Trichoderma harzianum (produk: Trichowish atau Kayabio): 10 g/polybag dicampur ke media',
       'Siram larutan Bio-Hara Plus 5 ml/L air, 1x/minggu sebagai agen hayati',
-      'Cabut dan bakar tanaman terinfeksi â€” jauhkan dari area nursery',
+      'Cabut dan bakar tanaman terinfeksi "” jauhkan dari area nursery',
       'Hindari overwatering; pastikan drainase polybag lancar',
     ],
   },
@@ -136,8 +136,8 @@ const TROUBLE_DATA: Record<string, TroubleItem> = {
       'Daun basah terlalu lama akibat penyiraman overhead',
     ],
     solusi: [
-      'Semprot Carbendazim 3 g/L + Mancozeb 3 g/L (konsentrasi 0,1%) bergantian tiap minggu â€” efektivitas 69,3%',
-      'Perbaiki sirkulasi udara: atur jarak polybag minimal 10â€“15 cm',
+      'Semprot Carbendazim 3 g/L + Mancozeb 3 g/L (konsentrasi 0,1%) bergantian tiap minggu "” efektivitas 69,3%',
+      'Perbaiki sirkulasi udara: atur jarak polybag minimal 10"“15 cm',
       'Hindari menyiram langsung mengenai daun; siram media saja',
       'Buang dan musnahkan daun bergejala berat',
     ],
@@ -151,10 +151,10 @@ const TROUBLE_DATA: Record<string, TroubleItem> = {
       'Suhu dan kelembapan tinggi terutama di musim hujan',
     ],
     solusi: [
-      'Pythium/Phytophthora: siram Metalaxyl (Ridomil) 2 g/L â€” siram media, jangan daun',
+      'Pythium/Phytophthora: siram Metalaxyl (Ridomil) 2 g/L "” siram media, jangan daun',
       'Fusarium/Botrytis/Rhizoctonia: siram Thiophanate-methyl 1 g/L',
       'Dithane M-45 (Mancozeb 80% WP) 2 g/L sebagai fungisida kontak preventif',
-      'Kurangi penyiraman dan perbaiki drainase polybag (3â€“5 lubang dasar)',
+      'Kurangi penyiraman dan perbaiki drainase polybag (3"“5 lubang dasar)',
       'Sterilisasi media sebelum penggunaan; jangan gunakan tanah kebun mentah',
     ],
   },
@@ -164,12 +164,12 @@ const TROUBLE_DATA: Record<string, TroubleItem> = {
     penyebab: [
       'Jadwal penyiraman tidak teratur',
       'Lubang drainase polybag tersumbat',
-      'Cuaca ekstrem â€” musim kemarau atau hujan deras',
+      'Cuaca ekstrem "” musim kemarau atau hujan deras',
     ],
     solusi: [
-      'Siram 2x/hari: pagi pukul 07.00â€“09.00 dan sore pukul 16.00â€“17.00',
-      'Tes jari: tancapkan 2 cm â€” lembap = cukup, kering = siram segera',
-      'Buat 3â€“5 lubang di dasar polybag jika drainase tersumbat',
+      'Siram 2x/hari: pagi pukul 07.00"“09.00 dan sore pukul 16.00"“17.00',
+      'Tes jari: tancapkan 2 cm "” lembap = cukup, kering = siram segera',
+      'Buat 3"“5 lubang di dasar polybag jika drainase tersumbat',
       'Saat hujan deras: kurangi frekuensi atau naungi sementara',
     ],
   },
@@ -182,8 +182,8 @@ const TROUBLE_DATA: Record<string, TroubleItem> = {
       'Radiasi panas dari atap seng atau refleksi permukaan lahan',
     ],
     solusi: [
-      'Pasang shading net 30â€“50% untuk bibit berumur di bawah 2 bulan',
-      'Lakukan misting daun di siang hari (pukul 11.00â€“14.00) jika perlu',
+      'Pasang shading net 30"“50% untuk bibit berumur di bawah 2 bulan',
+      'Lakukan misting daun di siang hari (pukul 11.00"“14.00) jika perlu',
       'Pindah ke area naungan saat puncak panas',
       'Bibit berumur di atas 3 bulan dapat terpapar sinar penuh secara bertahap',
     ],
@@ -191,30 +191,30 @@ const TROUBLE_DATA: Record<string, TroubleItem> = {
 };
 
 const PANDUAN_CONTENT: Record<string, string> = {
-  persiapan: '**Persiapan Bibit**\n\nBibit dipindahkan ke polybag pada hari ke-10 hingga ke-14 setelah berkecambah, saat tinggi sekitar 5 cm.\nMedia polybag standar: topsoil : pasir : kompos = 1:1:1. Alternatif terbukti: kompos 40% + arang sekam 20% + tanah 20% (formula KM-3).\nTambahkan inokulan Rhizobium 3 g/bibit dan mikoriza arbuskular 5â€“10 g/polybag saat transplanting.\nAdaptasi bibit di area teduh (paranet 50â€“75%) selama 7 hari sebelum pindah ke pencahayaan penuh bertahap.\n\nSumber: BPDAS Pontianak; Jurnal Sylva Lestari Unila.',
+  persiapan: '**Persiapan Bibit**\n\nBibit dipindahkan ke polybag pada hari ke-10 hingga ke-14 setelah berkecambah, saat tinggi sekitar 5 cm.\nMedia polybag standar: topsoil : pasir : kompos = 1:1:1. Alternatif terbukti: kompos 40% + arang sekam 20% + tanah 20% (formula KM-3).\nTambahkan inokulan Rhizobium 3 g/bibit dan mikoriza arbuskular 5"“10 g/polybag saat transplanting.\nAdaptasi bibit di area teduh (paranet 50"“75%) selama 7 hari sebelum pindah ke pencahayaan penuh bertahap.\n\nSumber: BPDAS Pontianak; Jurnal Sylva Lestari Unila.',
   potting: '**Proses Potting**\n\nPolybag pembibitan: ukuran 10x15 cm. Pindahkan ke polybag 20x25 cm saat umur 4 minggu.\nIsikan media 3/4 polybag; tanam bibit di tengah; padatkan media ringan di sekitar perakaran.\nRendam benih dalam air 60 derajat Celsius selama 15 menit sebelum semai untuk mematahkan dormansi.\nSiram ringan setelah transplanting; letakkan di naungan 7 hari sebelum aklimatisasi ke sinar penuh.\n\nSumber: BPDASHL Siantan; Jurnal Hutan Lestari Untan.',
-  penyiraman: '**Penyiraman dan Pemupukan**\n\nPenyiraman: 2x/hari â€” pagi pukul 07.00â€“09.00 dan sore pukul 16.00â€“17.00.\nMulai hari ke-10 setelah transplanting: NPK cair 0,5 g/L, 1x/minggu.\nFase 4â€“8 minggu: NPK Mutiara 16-16-16 dan Urea+ZA (rasio 1:2), dosis 1 g/polybag, tiap 2 minggu.\nPupuk Organik Cair (POC): 5 ml/L, tiap 2 minggu. Semprotkan ke media, bukan langsung ke daun.\nDosis NPK 1 g/polybag terbukti optimal untuk pertumbuhan tinggi sengon.\n\nSumber: Jurnal Biologi Tropis UNRAM 2023.',
-  perawatan: '**Perawatan dan Pencahayaan**\n\nBibit di bawah 2 bulan: lindungi dari terik siang dengan paranet 30â€“50%.\nBibit di atas 3 bulan: aklimatisasi sinar penuh secara bertahap.\nRotasi posisi polybag minggual agar pertumbuhan merata dan tidak etiolasi.\nPangkas daun kering atau menguning; pastikan drainase tidak tersumbat.\nJarak antar polybag minimal 10â€“15 cm untuk sirkulasi udara dan pencegahan penyakit cendawan.',
-  tentang: '**Tentang Sengon (Falcataria moluccana)**\n\nFamili Fabaceae, subfamili Mimosoideae. Nama lain: Albasia, Jeungjing, White Albizia.\nPohon legum cepat tumbuh; tinggi 30â€“40 m, diameter batang 40â€“60 cm.\nToleran pH 5,5â€“7,0, suhu tinggi, dan lahan miskin hara.\nSimbiosis dengan Rhizobium menambat nitrogen bebas atmosfer, memperbaiki kesuburan dan struktur agregat tanah.\nCocok sebagai spesies pionir untuk reklamasi lahan pasca tambang.\n\nPilih subtopik di bawah untuk informasi lebih lanjut:',
-  spesies: '**Aspek Spesies**\n\nFamili Fabaceae, subfamili Mimosoideae. Tinggi 30â€“40 m, diameter batang 40â€“60 cm.\nToleran pH 5,5â€“7,0; adaptif di suhu tinggi dan lahan miskin hara.\nSimbiosis Rhizobium menambat nitrogen bebas atmosfer. Isolat Rhizobium GR2-7 dan GR3-4 meningkatkan berat kering bibit 132â€“167% di tanah Ultisol.\nMikoriza arbuskular (AMF) kolonisasi akar mencapai 3â€“82% di kondisi nursery; sangat meningkatkan daya tahan terhadap penyakit.\n\nSumber: Jurnal JURRITEK (Rhizobium lahan bekas tambang); Forest Science and Technology 2024.',
-  teknis: '**Aspek Teknis dan Budidaya Lapangan**\n\nSpesies fast growing ideal untuk revegetasi lahan pasca tambang. Pertumbuhan 4â€“6 m dalam 12â€“18 bulan pertama.\nAkar dalam menahan erosi dan memperbaiki aerasi tanah; serasah mempercepat suksesi vegetasi sekunder.\nJarak tanam: 3x3 m atau 4x4 m (sekitar 625 pohon/ha di jarak 4x4 m).\nLubang tanam: 30x30x30 cm; tambahkan pupuk organik 2â€“3 kg dan dolomit 50 g per lubang.\n\nSumber: CIFOR-ICRAF Paraserianthes falcataria Silviculture Review.',
-  budidaya: '**Budidaya dan Potting**\n\nMedia polybag optimal: topsoil:kompos:pasir = 1:1:1, pH 5,5â€“6,5. Cocopeat 25â€“50% dapat menggantikan komponen tanah.\nPolybag 10x15 cm untuk pembibitan; pindah ke 20x25 cm di umur 4 minggu.\nTambahkan inokulan Rhizobium 3 g/bibit dan AMF 5â€“10 g/polybag saat transplanting.\nRendam benih air 60 derajat Celsius selama 15 menit sebelum semai.\nKriteria siap tanam: umur 3â€“3,5 bulan, tinggi minimal 25 cm, diameter minimal 5 mm, akar sehat tidak melingkar. Jangan tanam bibit berumur lebih dari 6 bulan.\n\nSumber: BPDASHL Siantan; Jurnal Sylva Lestari Unila.',
-  revegetasi: '**Revegetasi Pasca Tambang**\n\nSengon berfungsi sebagai spesies pionir. Dalam 12â€“18 bulan tumbuh 4â€“6 m:\n- Menurunkan suhu permukaan tanah\n- Menahan debu mineral dan partikel tanah\n- Meningkatkan bahan organik melalui serasah\n\nSetelah 3 tahun terbentuk lapisan serasah alami yang mempercepat suksesi vegetasi sekunder.\nRhizobium dan mikoriza sangat penting untuk keberhasilan di lahan terdegradasi.\nTingkat keberhasilan lapangan dengan bibit berinokulasi AMF: lebih dari 90% di lereng 25â€“40%.\n\nSumber: Forest Science and Technology 2024; CIFOR-ICRAF.',
-  rekomendasi: '**Rekomendasi Singkat**\n\nJarak tanam: 4x4 m â€” sekitar 625 pohon/ha\nPupuk dasar: 1 kg/tanaman\nKapur/Dolomit: 10 g/tanaman (sesuaikan dengan pH tanah)\nCover crop: 30 kg/ha\nPupuk organik pra-tanam: 1 ton/ha\nInokulan AMF: 5â€“10 g/bibit saat transplanting\nInokulan Rhizobium: 3 g/bibit\n\nSumber: CIFOR-ICRAF Silviculture Review; Jurnal JURRITEK.',
+  penyiraman: '**Penyiraman dan Pemupukan**\n\nPenyiraman: 2x/hari "” pagi pukul 07.00"“09.00 dan sore pukul 16.00"“17.00.\nMulai hari ke-10 setelah transplanting: NPK cair 0,5 g/L, 1x/minggu.\nFase 4"“8 minggu: NPK Mutiara 16-16-16 dan Urea+ZA (rasio 1:2), dosis 1 g/polybag, tiap 2 minggu.\nPupuk Organik Cair (POC): 5 ml/L, tiap 2 minggu. Semprotkan ke media, bukan langsung ke daun.\nDosis NPK 1 g/polybag terbukti optimal untuk pertumbuhan tinggi sengon.\n\nSumber: Jurnal Biologi Tropis UNRAM 2023.',
+  perawatan: '**Perawatan dan Pencahayaan**\n\nBibit di bawah 2 bulan: lindungi dari terik siang dengan paranet 30"“50%.\nBibit di atas 3 bulan: aklimatisasi sinar penuh secara bertahap.\nRotasi posisi polybag minggual agar pertumbuhan merata dan tidak etiolasi.\nPangkas daun kering atau menguning; pastikan drainase tidak tersumbat.\nJarak antar polybag minimal 10"“15 cm untuk sirkulasi udara dan pencegahan penyakit cendawan.',
+  tentang: '**Tentang Sengon (Falcataria moluccana)**\n\nFamili Fabaceae, subfamili Mimosoideae. Nama lain: Albasia, Jeungjing, White Albizia.\nPohon legum cepat tumbuh; tinggi 30"“40 m, diameter batang 40"“60 cm.\nToleran pH 5,5"“7,0, suhu tinggi, dan lahan miskin hara.\nSimbiosis dengan Rhizobium menambat nitrogen bebas atmosfer, memperbaiki kesuburan dan struktur agregat tanah.\nCocok sebagai spesies pionir untuk reklamasi lahan pasca tambang.\n\nPilih subtopik di bawah untuk informasi lebih lanjut:',
+  spesies: '**Aspek Spesies**\n\nFamili Fabaceae, subfamili Mimosoideae. Tinggi 30"“40 m, diameter batang 40"“60 cm.\nToleran pH 5,5"“7,0; adaptif di suhu tinggi dan lahan miskin hara.\nSimbiosis Rhizobium menambat nitrogen bebas atmosfer. Isolat Rhizobium GR2-7 dan GR3-4 meningkatkan berat kering bibit 132"“167% di tanah Ultisol.\nMikoriza arbuskular (AMF) kolonisasi akar mencapai 3"“82% di kondisi nursery; sangat meningkatkan daya tahan terhadap penyakit.\n\nSumber: Jurnal JURRITEK (Rhizobium lahan bekas tambang); Forest Science and Technology 2024.',
+  teknis: '**Aspek Teknis dan Budidaya Lapangan**\n\nSpesies fast growing ideal untuk revegetasi lahan pasca tambang. Pertumbuhan 4"“6 m dalam 12"“18 bulan pertama.\nAkar dalam menahan erosi dan memperbaiki aerasi tanah; serasah mempercepat suksesi vegetasi sekunder.\nJarak tanam: 3x3 m atau 4x4 m (sekitar 625 pohon/ha di jarak 4x4 m).\nLubang tanam: 30x30x30 cm; tambahkan pupuk organik 2"“3 kg dan dolomit 50 g per lubang.\n\nSumber: CIFOR-ICRAF Paraserianthes falcataria Silviculture Review.',
+  budidaya: '**Budidaya dan Potting**\n\nMedia polybag optimal: topsoil:kompos:pasir = 1:1:1, pH 5,5"“6,5. Cocopeat 25"“50% dapat menggantikan komponen tanah.\nPolybag 10x15 cm untuk pembibitan; pindah ke 20x25 cm di umur 4 minggu.\nTambahkan inokulan Rhizobium 3 g/bibit dan AMF 5"“10 g/polybag saat transplanting.\nRendam benih air 60 derajat Celsius selama 15 menit sebelum semai.\nKriteria siap tanam: umur 3"“3,5 bulan, tinggi minimal 25 cm, diameter minimal 5 mm, akar sehat tidak melingkar. Jangan tanam bibit berumur lebih dari 6 bulan.\n\nSumber: BPDASHL Siantan; Jurnal Sylva Lestari Unila.',
+  revegetasi: '**Revegetasi Pasca Tambang**\n\nSengon berfungsi sebagai spesies pionir. Dalam 12"“18 bulan tumbuh 4"“6 m:\n- Menurunkan suhu permukaan tanah\n- Menahan debu mineral dan partikel tanah\n- Meningkatkan bahan organik melalui serasah\n\nSetelah 3 tahun terbentuk lapisan serasah alami yang mempercepat suksesi vegetasi sekunder.\nRhizobium dan mikoriza sangat penting untuk keberhasilan di lahan terdegradasi.\nTingkat keberhasilan lapangan dengan bibit berinokulasi AMF: lebih dari 90% di lereng 25"“40%.\n\nSumber: Forest Science and Technology 2024; CIFOR-ICRAF.',
+  rekomendasi: '**Rekomendasi Singkat**\n\nJarak tanam: 4x4 m "” sekitar 625 pohon/ha\nPupuk dasar: 1 kg/tanaman\nKapur/Dolomit: 10 g/tanaman (sesuaikan dengan pH tanah)\nCover crop: 30 kg/ha\nPupuk organik pra-tanam: 1 ton/ha\nInokulan AMF: 5"“10 g/bibit saat transplanting\nInokulan Rhizobium: 3 g/bibit\n\nSumber: CIFOR-ICRAF Silviculture Review; Jurnal JURRITEK.',
 };
 
 const HAMA_CONTENT: Record<string, string> = {
   daun_rusak: '**Ulat / Belalang / Hama Pemakan Daun**\n\nDaun berlubang tidak beraturan atau terpotong rapi pada tepi daun.\n\nTindak lanjut:\n- Semprot pestisida nabati berbahan nimba (azadirachtin) atau bawang putih, 1x/minggu\n- Pasang jaring penahan serangga di area nursery\n- Bersihkan gulma di sekitar polybag yang menjadi tempat persembunyian hama\n\nResep organik: 5 siung bawang putih + 3 cabai, rendam dalam 1 liter air semalam, saring dan semprot ke permukaan daun.',
   daun_kuning: '**Kutu Daun (Aphid) atau Tungau**\n\nDaun menguning, menggulung, atau terdapat bintik-bintik halus. Koloni kutu tampak di bagian bawah daun.\n\nTindak lanjut:\n- Periksa bagian bawah daun; jika ada kutu: semprot larutan sabun insektisida 2 tetes/L, bilas keesokan harinya\n- Kurangi penyiraman jika media selalu basah\n- Tambah POC ringan jika daun pucat merata (kemungkinan defisiensi hara)\n- Imidakloprid 0,5 ml/L jika populasi sangat tinggi dan tidak terkendali',
-  embun: '**Embun Tepung (Powdery Mildew)**\n\nLapisan putih keabu-abuan di permukaan daun, umumnya mulai dari daun muda.\n\nTindak lanjut:\n- Tingkatkan sirkulasi udara: atur jarak polybag minimal 10â€“15 cm\n- Semprot larutan air dan susu (rasio 9:1 volume) â€” terbukti efektif sebagai fungisida organik\n- Hindari menyiram langsung mengenai daun; siram media saja\n- Jika parah: Sulfur 80 WP 2â€“3 g/L atau Triadimefon 25 WP 1 g/L',
-  layu: '**Layu Fusarium atau Busuk Pangkal Batang**\n\nBibit layu tiba-tiba, pangkal batang gelap atau lembek, akar membusuk.\n\nTindak lanjut:\n- Siram media dengan Thiophanate-methyl 1 g/L untuk Fusarium, Botrytis, dan Rhizoctonia\n- Perbaiki drainase polybag (tambah lubang di dasar)\n- Singkirkan tanaman sakit dari area nursery segera â€” jangan tumpuk bersama yang sehat\n- Sterilisasi media polybag baru sebelum digunakan; jangan overwatering',
+  embun: '**Embun Tepung (Powdery Mildew)**\n\nLapisan putih keabu-abuan di permukaan daun, umumnya mulai dari daun muda.\n\nTindak lanjut:\n- Tingkatkan sirkulasi udara: atur jarak polybag minimal 10"“15 cm\n- Semprot larutan air dan susu (rasio 9:1 volume) "” terbukti efektif sebagai fungisida organik\n- Hindari menyiram langsung mengenai daun; siram media saja\n- Jika parah: Sulfur 80 WP 2"“3 g/L atau Triadimefon 25 WP 1 g/L',
+  layu: '**Layu Fusarium atau Busuk Pangkal Batang**\n\nBibit layu tiba-tiba, pangkal batang gelap atau lembek, akar membusuk.\n\nTindak lanjut:\n- Siram media dengan Thiophanate-methyl 1 g/L untuk Fusarium, Botrytis, dan Rhizoctonia\n- Perbaiki drainase polybag (tambah lubang di dasar)\n- Singkirkan tanaman sakit dari area nursery segera "” jangan tumpuk bersama yang sehat\n- Sterilisasi media polybag baru sebelum digunakan; jangan overwatering',
   akar: '**Rayap atau Orong-orong**\n\nAkar berongga atau terputus, media menggumpal tidak normal, bibit layu tiba-tiba tanpa sebab jelas.\n\nTindak lanjut:\n- Tambahkan dolomit 1 sdm/polybag ke media sebagai pengusir alami\n- Siram larutan rebusan serai 5 batang per 1 liter air di sekitar pangkal media\n- Pasang perangkap lampu sederhana di sekitar nursery untuk rayap bersayap\n- Klopirifos 0,5 ml/L sebagai drenching media jika serangan berat',
 };
 
 const SARAN_MSG = `**Roadmap Pengembangan Montana AI**
 
 **1. PWA dan Mode Offline**
-Service Worker agar dapat diakses tanpa koneksi internet â€” penting untuk nursery di area sinyal lemah.
+Service Worker agar dapat diakses tanpa koneksi internet "” penting untuk nursery di area sinyal lemah.
 
 **2. Sinkronisasi Google Sheets**
 Hubungkan catatan dan stok ke endpoint doPost/doGet Google Apps Script yang sudah ada.
@@ -238,7 +238,7 @@ Chart.js untuk visualisasi tren masuk-keluar bibit per bulan dalam bentuk grafik
 Integrasi jsQR untuk memindai kode verifikasi surat jalan langsung dari kamera perangkat.
 
 **9. Asisten Suara**
-Web Speech API untuk perintah suara â€” berguna saat petugas tidak bisa menyentuh layar.
+Web Speech API untuk perintah suara "” berguna saat petugas tidak bisa menyentuh layar.
 
 **10. Tema Terang**
 Light mode toggle untuk kondisi outdoor agar layar mudah dibaca saat cuaca terik.`;
@@ -249,9 +249,9 @@ function buildCatatanMsg(list: NoteItem[]): string {
     return '**Catatan Lapangan**\n\nBelum ada catatan. Gunakan tombol "Tambah Catatan" untuk mulai mencatat.';
   }
   const recent = [...list].slice(-5).reverse();
-  let msg = `**Catatan Lapangan** â€” ${list.length} catatan (5 terbaru)\n\n`;
+  let msg = `**Catatan Lapangan** "” ${list.length} catatan (5 terbaru)\n\n`;
   recent.forEach((n, i) => {
-    msg += `**${i + 1}. ${n.kategori}** â€” ${n.tanggal}\n${n.isi}\n\n`;
+    msg += `**${i + 1}. ${n.kategori}** "” ${n.tanggal}\n${n.isi}\n\n`;
   });
   msg += '_Ketik "hapus 1" hingga "hapus 5" untuk menghapus catatan tertentu._';
   return msg;
@@ -307,10 +307,10 @@ function getDosisQR(subPage: string): QR[] {
     { label: 'Pilih Fase Lain', value: 'dosis_back' },
   ];
   return [
-    { label: 'Fase 1 â€” Pembibitan (0â€“4 Mgg)',  value: 'dosis_fase_1', variant: 'primary' as const },
-    { label: 'Fase 2 â€” Pertumbuhan (4â€“8 Mgg)', value: 'dosis_fase_2' },
-    { label: 'Fase 3 â€” Penguatan (8â€“12 Mgg)',  value: 'dosis_fase_3' },
-    { label: 'Fase 4 â€” Pra-Tanam (>12 Mgg)',   value: 'dosis_fase_4' },
+    { label: 'Fase 1 "” Pembibitan (0"“4 Mgg)',  value: 'dosis_fase_1', variant: 'primary' as const },
+    { label: 'Fase 2 "” Pertumbuhan (4"“8 Mgg)', value: 'dosis_fase_2' },
+    { label: 'Fase 3 "” Penguatan (8"“12 Mgg)',  value: 'dosis_fase_3' },
+    { label: 'Fase 4 "” Pra-Tanam (>12 Mgg)',   value: 'dosis_fase_4' },
   ];
 }
 
@@ -406,12 +406,12 @@ function ProgressBar({ step, sjStep, agent }: { step: Step; sjStep: SuratJalanSt
     const idx = SJ_STEP_ORDER.indexOf(sjStep);
     const sjLabels: Record<SuratJalanStep, string> = {
       sj_start: 'Memulai',
-      sj_bibit: 'Langkah 1 / 6 â€” Jenis Bibit',
-      sj_jumlah: 'Langkah 2 / 6 â€” Jumlah',
-      sj_sumber: 'Langkah 3 / 6 â€” Sumber',
-      sj_tujuan: 'Langkah 4 / 6 â€” Tujuan',
-      sj_dibuat: 'Langkah 5 / 6 â€” Pembuat',
-      sj_driver: 'Langkah 6 / 6 â€” Driver',
+      sj_bibit: 'Langkah 1 / 6 "” Jenis Bibit',
+      sj_jumlah: 'Langkah 2 / 6 "” Jumlah',
+      sj_sumber: 'Langkah 3 / 6 "” Sumber',
+      sj_tujuan: 'Langkah 4 / 6 "” Tujuan',
+      sj_dibuat: 'Langkah 5 / 6 "” Pembuat',
+      sj_driver: 'Langkah 6 / 6 "” Driver',
       sj_confirm: 'Konfirmasi',
       sj_done: 'Selesai',
     };
@@ -510,10 +510,10 @@ function DosisForm({ onSubmit }: { onSubmit: (polybag: number, fase: number, har
             onChange={e => setFase(e.target.value)}
             className="w-full bg-[#2f2f2f] text-white text-[12px] rounded-lg px-3 py-2 border border-white/10 outline-none focus:border-emerald-600/50"
           >
-            <option value="1">Fase 1 â€” Pembibitan (0â€“4 minggu)</option>
-            <option value="2">Fase 2 â€” Pertumbuhan (4â€“8 minggu)</option>
-            <option value="3">Fase 3 â€” Penguatan (8â€“12 minggu)</option>
-            <option value="4">Fase 4 â€” Pra-Tanam (lebih dari 12 minggu)</option>
+            <option value="1">Fase 1 "” Pembibitan (0"“4 minggu)</option>
+            <option value="2">Fase 2 "” Pertumbuhan (4"“8 minggu)</option>
+            <option value="3">Fase 3 "” Penguatan (8"“12 minggu)</option>
+            <option value="4">Fase 4 "” Pra-Tanam (lebih dari 12 minggu)</option>
           </select>
         </div>
         <button
@@ -799,7 +799,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
       const nm = p.d.match(/([\d.,]+)/);
       const numVal = nm ? parseFloat(nm[1].replace(',', '.')) : 0;
       const unit = p.d.replace(/[\d.,\s]+/, '').split('/')[0].trim();
-      const total = numVal > 0 ? (numVal * polybag).toLocaleString('id-ID') : 'â€”';
+      const total = numVal > 0 ? (numVal * polybag).toLocaleString('id-ID') : '"”';
       msg += `\n\n**${p.n}**\nPer polybag: ${p.d}\nTotal: **${total} ${unit}**\nFrekuensi: ${p.f}`;
     });
     msg += `\n\nCatatan: ${d.ket}`;
@@ -865,7 +865,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
           if (found) {
             const stok = stokMap[found.toUpperCase()] || 0;
             const badge = stok <= 0 ? 'Habis' : stok < 500 ? 'Kritis' : stok < 1000 ? 'Menipis' : 'Aman';
-            addMsg('bot', `**${found}**\nStok: **${stok.toLocaleString('id-ID')}** bibit â€” ${badge}`);
+            addMsg('bot', `**${found}**\nStok: **${stok.toLocaleString('id-ID')}** bibit "” ${badge}`);
           } else {
             addMsg('bot', 'Silakan sebutkan nama bibit yang ingin dicek stoknya.\nContoh: "Stok SENGON POTTING" atau "Stok semua bibit".');
           }
@@ -888,7 +888,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
           options.bibit.forEach((b) => {
             const mati = kematianMap[b.toUpperCase()] || 0;
             total += mati;
-            if (mati > 0) msg += `â€¢ **${b}**: ${mati.toLocaleString('id-ID')} bibit\n`;
+            if (mati > 0) msg += `• **${b}**: ${mati.toLocaleString('id-ID')} bibit\n`;
           });
           msg += `\n**Total Kematian: ${total.toLocaleString('id-ID')} bibit**`;
           msg += '\n\nKetik **"tingkat kematian"** untuk melihat analisis mortalitas.';
@@ -925,7 +925,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
             });
             let msg = `**Distribusi ke Tim ${timName.charAt(0) + timName.slice(1).toLowerCase()}:**\n`;
             Object.keys(rekap).sort().forEach((b: string) => {
-              msg += `â€¢ ${b}: ${rekap[b].toLocaleString('id-ID')} bibit\n`;
+              msg += `• ${b}: ${rekap[b].toLocaleString('id-ID')} bibit\n`;
             });
             msg += `\nTotal: ${rowsTim.reduce((a, b) => a + (b.keluar || 0), 0).toLocaleString('id-ID')} bibit`;
             addMsg('bot', msg);
@@ -940,7 +940,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
 
       addMsg(
         'bot',
-        'Saya belum memahami pertanyaan tersebut.\n\nCoba ketik:\nâ€¢ "Analisis lengkap"\nâ€¢ "Stok semua bibit"\nâ€¢ "Bibit kritis"\nâ€¢ "Tingkat kematian"\nâ€¢ "Tren minggu ini"\nâ€¢ "Performa distribusi"\nâ€¢ "Rekomendasi"'
+        'Saya belum memahami pertanyaan tersebut.\n\nCoba ketik:\n• "Analisis lengkap"\n• "Stok semua bibit"\n• "Bibit kritis"\n• "Tingkat kematian"\n• "Tren minggu ini"\n• "Performa distribusi"\n• "Rekomendasi"'
       );
       return;
     }
@@ -998,19 +998,19 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
         addMsg('bot',
           '**Cara Menggunakan Laporan:**\n\n' +
           'Buka tab **"Laporan"** dan ketik:\n\n' +
-          'â€¢ "Laporan stok" â€” ringkasan stok semua bibit\n' +
-          'â€¢ "Laporan distribusi" â€” rekap pengiriman ke semua tujuan\n' +
-          'â€¢ "Laporan kematian" â€” rekap kematian per bibit + mortalitas\n' +
-          'â€¢ "Laporan mingguan" â€” aktivitas 7 hari terakhir'
+          '• "Laporan stok" "” ringkasan stok semua bibit\n' +
+          '• "Laporan distribusi" "” rekap pengiriman ke semua tujuan\n' +
+          '• "Laporan kematian" "” rekap kematian per bibit + mortalitas\n' +
+          '• "Laporan mingguan" "” aktivitas 7 hari terakhir'
         );
         return;
       }
       addMsg('bot',
         '**Bantuan Tersedia:**\n\n' +
-        '- **Fast Input** â€” Catat bibit masuk/keluar/mati\n' +
-        '- **Surat Jalan** â€” Buat dokumen distribusi PDF\n' +
-        '- **Info Bibit** â€” Analisis stok dan distribusi mendalam\n' +
-        '- **Laporan** â€” Rekap data bibit\n\n' +
+        '- **Fast Input** "” Catat bibit masuk/keluar/mati\n' +
+        '- **Surat Jalan** "” Buat dokumen distribusi PDF\n' +
+        '- **Info Bibit** "” Analisis stok dan distribusi mendalam\n' +
+        '- **Laporan** "” Rekap data bibit\n\n' +
         'Ketik nama topik untuk panduan lengkap.\nContoh: _"Cara surat jalan"_, _"Cara laporan"_'
       );
       return;
@@ -1059,9 +1059,9 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
           const daysOld = Math.max(0, Math.floor((Date.now() - semai.getTime()) / 86400000));
           const wk = Math.floor(daysOld / 7);
           const phase =
-            daysOld < 28 ? 'Fase 1 â€” Pembibitan' :
-            daysOld < 56 ? 'Fase 2 â€” Pertumbuhan' :
-            daysOld < 84 ? 'Fase 3 â€” Penguatan' : 'Fase 4 â€” Pra-Tanam';
+            daysOld < 28 ? 'Fase 1 "” Pembibitan' :
+            daysOld < 56 ? 'Fase 2 "” Pertumbuhan' :
+            daysOld < 84 ? 'Fase 3 "” Penguatan' : 'Fase 4 "” Pra-Tanam';
           const addD = (n: number) => {
             const r = new Date(semai); r.setDate(r.getDate() + n);
             return r.toLocaleDateString('id-ID');
@@ -1125,7 +1125,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
         setCatatanList(updated);
         setPendingKat('');
         setSubPage('');
-        addMsg('bot', `Catatan tersimpan.\n\n**${newNote.kategori}** â€” ${tanggal}\n${value}`);
+        addMsg('bot', `Catatan tersimpan.\n\n**${newNote.kategori}** "” ${tanggal}\n${value}`);
         return;
       }
       const hapusM = value.toLowerCase().match(/^hapus\s+(\d+)$/);
@@ -1188,7 +1188,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
         if (t) {
           setSubPage(key);
           let msg = `${t.title}\n\n**Gejala:** ${t.gejala}\n\n**Penyebab:**`;
-          t.penyebab.forEach((p) => { msg += `\nâ€¢ ${p}`; });
+          t.penyebab.forEach((p) => { msg += `\n• ${p}`; });
           msg += `\n\n**Solusi:**`;
           t.solusi.forEach((s, i) => { msg += `\n${i + 1}. ${s}`; });
           addMsg('bot', msg);
@@ -1356,7 +1356,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
             <Zap className="w-3.5 h-3.5 text-emerald-400" />
             {AGENTS.find((a) => a.key === agent)?.label || 'Montana AI'}
           </h2>
-          <p className="text-[10px] text-gray-500">Montana Bibit AI â€” Pilih topik di bawah</p>
+          <p className="text-[10px] text-gray-500">Montana Bibit AI "” Pilih topik di bawah</p>
         </div>
         <button
           onClick={() => {
@@ -1517,7 +1517,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
         <DosisForm onSubmit={handleDosisCalc} />
       )}
 
-      {/* â”€â”€ Text input â€” always visible â”€â”€ */}
+      {/* â”€â”€ Text input "” always visible â”€â”€ */}
       <div className="shrink-0 border-t border-white/5 bg-[#1a1a1a] px-3 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-2 bg-[#2f2f2f] rounded-xl px-4 py-2">
           <input

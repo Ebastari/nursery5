@@ -51,7 +51,7 @@ export function RegisterScreen() {
             <img src={COMPANY_LOGO} alt="Logo" className="w-12 h-12 object-contain" onError={e => { (e.target as HTMLImageElement).src = '/favicon.svg'; }} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Smart Nursery</h1>
-          <p className="text-xs text-gray-500 mt-1">PT Energi Batubara Lestari â€” Unit Nursery</p>
+          <p className="text-xs text-gray-500 mt-1">PT Energi Batubara Lestari - Unit Nursery</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
@@ -149,7 +149,7 @@ export function RegisterScreen() {
               />
             </div>
             <p className="text-[10px] text-gray-400 mt-1">
-              Jika belum ada akun di sistem, kosongkan â€” Anda akan otomatis jadi Admin.
+              Jika belum ada akun di sistem, kosongkan - Anda akan otomatis jadi Admin.
             </p>
           </div>
 
