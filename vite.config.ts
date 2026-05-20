@@ -5,7 +5,7 @@ import type { Connect } from 'vite'
 import https from 'https'
 import http from 'http'
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyZVhoEIplFgioD6GKrB_Y7pXy_IXpa0voL9_2XmYk8Dvp1prrOlB3wqn5EOamqDYdS/exec'
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyj7cIHG1XEC5eK2aGFVyugdymTpSLUpdyazacuUEgCu-ntjI6qWtSzOY7donPSSygk/exec'
 
 // Follow GAS redirect chain server-side, returning final JSON
 function gasRequest(method: string, body: string | null): Promise<string> {
@@ -101,5 +101,15 @@ export default defineConfig({
   ],
   server: {
     port: 3000,
+    headers: {
+      'Content-Security-Policy':
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:; " +
+        "worker-src 'self' blob:; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data: blob: https:; " +
+        "connect-src 'self' https://script.google.com https:; " +
+        "font-src 'self' data:;",
+    },
   },
 })

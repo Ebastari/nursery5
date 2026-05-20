@@ -1,0 +1,4 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://script.google.com https://api.fonnte.com https:; font-src 'self' data:;
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
