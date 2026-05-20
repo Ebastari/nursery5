@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { PlantStock, ActivityRecord, Shipment, Document, Alert, Notification, ApprovalRecord } from '../data/types';
 
 import {
-  fetchApiData, clearCache, approveDocument,
+  fetchApiData, fetchFreshFromNetwork, clearCache, approveDocument,
   loginUser as apiLogin, registerUser as apiRegister,
 } from '../data/api';
 import type { AuthUser, ApiRow } from '../data/api';
@@ -30,7 +30,7 @@ function loadAuthFromStorage(): { user: AuthUser; token: string; loginAt: string
   }
 }
 
-function deriveNotifications(rows: ApiRow[]): Notification[] {
+function deriveNotifications(rows: ApiRow[], readIds: Set<string> = new Set()): Notification[] {
   return rows
     .filter((r) => r.masuk > 0 || r.keluar > 0 || r.mati > 0)
     .sort((a, b) => b.tanggal.localeCompare(a.tanggal))
@@ -38,8 +38,9 @@ function deriveNotifications(rows: ApiRow[]): Notification[] {
     .map((r, i) => {
       const jenis: 'masuk' | 'keluar' | 'mati' = r.keluar > 0 ? 'keluar' : r.masuk > 0 ? 'masuk' : 'mati';
       const jumlah = r.keluar > 0 ? r.keluar : r.masuk > 0 ? r.masuk : r.mati;
+      const id = r.nomorSurat || r.kodeVerifikasi || `notif-${i}`;
       return {
-        id: `notif-${i}`,
+        id,
         tanggal: r.tanggal,
         bibit: r.bibit,
         jumlah,
@@ -47,7 +48,7 @@ function deriveNotifications(rows: ApiRow[]): Notification[] {
         sumber: r.sumber,
         tujuan: r.tujuan,
         statusKirim: r.statusKirim || 'Baru',
-        read: false,
+        read: readIds.has(id),
       };
     });
 }
@@ -258,7 +259,8 @@ export const useStore = create<AppState>((set, get) => ({
     set({ loadingNotifications: true });
     try {
       const rows = await fetchApiData();
-      const notifications = deriveNotifications(rows);
+      const readIds = new Set(get().notifications.filter((n) => n.read).map((n) => n.id));
+      const notifications = deriveNotifications(rows, readIds);
       const ts = await getLastUpdated();
       set({ notifications, loadingNotifications: false, lastUpdated: ts });
     } catch {
@@ -267,7 +269,11 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   refreshAll: async () => {
-    clearCache();
+    try {
+      await fetchFreshFromNetwork();
+    } catch {
+      clearCache();
+    }
     const { fetchPlants, fetchActivities, fetchAlerts, fetchNotifications, loadLastUpdated } = get();
     await Promise.all([fetchPlants(), fetchActivities(), fetchAlerts(), fetchNotifications()]);
     await loadLastUpdated();

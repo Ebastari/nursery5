@@ -189,6 +189,21 @@ export function invalidateCache() {
   cachedDropdowns = null;
 }
 
+// Selalu ambil dari network (untuk refreshAll agar statusKirim selalu terkini)
+export async function fetchFreshFromNetwork(): Promise<ApiRow[]> {
+  if (!navigator.onLine) return fetchApiData();
+  const apiUrl = `${API_URL}?t=${Date.now()}`;
+  const res = await fetch(apiUrl, { redirect: 'follow' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  if (text.trimStart().startsWith('<')) throw new Error('Apps Script error — bukan JSON');
+  const json: ApiResponse = JSON.parse(text);
+  if (!json.data || !Array.isArray(json.data)) throw new Error('Format response tidak sesuai');
+  cachedRows = json.data;
+  try { await saveRowsToDB(json.data); } catch { /* ignore */ }
+  return cachedRows;
+}
+
 let cachedDropdowns: DropdownOptions | null = null;
 
 export async function fetchDropdowns(): Promise<DropdownOptions> {
