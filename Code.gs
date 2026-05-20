@@ -25,7 +25,7 @@
 var CODE_VERSION = '2.0.0';
 
 // ── NAMA SHEET ──────────────────────────────────────────────
-var SHEET_DATA    = 'Data';
+var SHEET_DATA    = 'Bibit';
 var SHEET_USERS   = 'Users';
 var SHEET_OTP     = 'OTP';
 var SHEET_INVITES = 'InviteCodes';
@@ -180,8 +180,34 @@ function doPost(e) {
 }
 
 // ============================================================
-// GET DATA — Ambil semua baris dari sheet Data
+// GET DATA — Ambil semua baris dari sheet Data/Bibit
 // ============================================================
+function buildHMap(rows) {
+  var map = {};
+  var raw = rows[0];
+  for (var i = 0; i < raw.length; i++) {
+    var key = String(raw[i]).trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
+    map[key] = i;
+  }
+  return map;
+}
+
+function hGet(row, map, key, fallback) {
+  var idx = map[key];
+  if (idx === undefined) return fallback !== undefined ? fallback : '';
+  var v = row[idx];
+  if (v === undefined || v === null || v === '') return fallback !== undefined ? fallback : '';
+  if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Makassar', 'yyyy-MM-dd');
+  return String(v).trim();
+}
+
+function hNum(row, map, key) {
+  var idx = map[key];
+  if (idx === undefined) return 0;
+  var n = Number(row[idx]);
+  return isNaN(n) ? 0 : n;
+}
+
 function handleGetData() {
   var sheet = getSheet(SHEET_DATA);
   if (!sheet) return jsonOk({ data: [], count: 0, timestamp: new Date().toISOString() });
@@ -189,15 +215,39 @@ function handleGetData() {
   var rows = sheet.getDataRange().getValues();
   if (rows.length <= 1) return jsonOk({ data: [], count: 0, timestamp: new Date().toISOString() });
 
-  var headers = rows[0].map(function(h) { return String(h).trim(); });
-  var data    = [];
+  var m    = buildHMap(rows);
+  var data = [];
 
   for (var i = 1; i < rows.length; i++) {
-    var obj = {};
-    headers.forEach(function(h, j) {
-      obj[h] = (rows[i][j] !== undefined && rows[i][j] !== null) ? rows[i][j] : '';
+    var r       = rows[i];
+    var tanggal = hGet(r, m, 'tanggal');
+    var bibit   = hGet(r, m, 'bibit');
+    if (!tanggal && !bibit) continue;
+
+    data.push({
+      tanggal:        tanggal,
+      bulan:          hGet(r, m, 'bulan'),
+      bibit:          bibit,
+      masuk:          hNum(r, m, 'masuk'),
+      keluar:         hNum(r, m, 'keluar'),
+      mati:           hNum(r, m, 'mati'),
+      total:          hNum(r, m, 'total'),
+      sumber:         hGet(r, m, 'sumber'),
+      tujuan:         hGet(r, m, 'tujuan'),
+      nomorSurat:     hGet(r, m, 'nomorsurat'),
+      statusApproval: hGet(r, m, 'statusapproval'),
+      approvedBy:     hGet(r, m, 'approvedby'),
+      approvedAt:     hGet(r, m, 'approvedat'),
+      statusKirim:    hGet(r, m, 'statuskirim'),
+      kodeVerifikasi: hGet(r, m, 'kodeverifikasi'),
+      linkPdf:        hGet(r, m, 'linkpdf'),
+      dibuatOleh:     hGet(r, m, 'dibuatoleh') || hGet(r, m, 'dibuatoleh_'),
+      driver:         hGet(r, m, 'driver'),
+      statusTerima:   hGet(r, m, 'statusterima'),
+      namaPenerima:   hGet(r, m, 'namapenerima'),
+      tanggalTerima:  hGet(r, m, 'tanggalterima'),
+      jumlahDiterima: hNum(r, m, 'jumlahditerima')
     });
-    if (obj.tanggal || obj.bibit) data.push(obj);
   }
 
   return jsonOk({ data: data, count: data.length, timestamp: new Date().toISOString() });
@@ -264,25 +314,26 @@ function handleVerify(code) {
   var sheet = getSheet(SHEET_DATA);
   if (!sheet) return jsonOk({ valid: false });
 
-  var rows    = sheet.getDataRange().getValues();
-  var headers = rows[0].map(function(h) { return String(h).trim(); });
-  var kodeIdx = headers.indexOf('kodeVerifikasi');
-  if (kodeIdx < 0) return jsonOk({ valid: false });
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return jsonOk({ valid: false });
+
+  var m       = buildHMap(rows);
+  var kodeIdx = m['kodeverifikasi'];
+  if (kodeIdx === undefined) return jsonOk({ valid: false });
 
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][kodeIdx]).trim() !== String(code).trim()) continue;
-    var obj = {};
-    headers.forEach(function(h, j) { obj[h] = rows[i][j]; });
+    var r = rows[i];
     return jsonOk({
       valid:          true,
-      tanggal:        obj.tanggal        || '',
-      bibit:          obj.bibit          || '',
-      masuk:          obj.masuk          || 0,
-      keluar:         obj.keluar         || 0,
-      mati:           obj.mati           || 0,
-      sumber:         obj.sumber         || '',
-      tujuan:         obj.tujuan         || '',
-      kodeVerifikasi: obj.kodeVerifikasi || ''
+      tanggal:        hGet(r, m, 'tanggal'),
+      bibit:          hGet(r, m, 'bibit'),
+      masuk:          hNum(r, m, 'masuk'),
+      keluar:         hNum(r, m, 'keluar'),
+      mati:           hNum(r, m, 'mati'),
+      sumber:         hGet(r, m, 'sumber'),
+      tujuan:         hGet(r, m, 'tujuan'),
+      kodeVerifikasi: hGet(r, m, 'kodeverifikasi')
     });
   }
   return jsonOk({ valid: false });
