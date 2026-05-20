@@ -1,4 +1,5 @@
-﻿import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+﻿import { useEffect } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Camera, Package, Bell, ExternalLink } from 'lucide-react';
 import { NotificationBell } from '../components/NotificationBell';
 import { useStore } from '../store/useStore';
@@ -30,7 +31,23 @@ export function Layout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const title = pageTitles[pathname] || 'Smart Nursery';
-  const { isAdmin, authUser } = useStore();
+  const { isAdmin, authUser, refreshAll } = useStore();
+
+  useEffect(() => {
+    // Refresh saat user kembali ke tab — menangkap perubahan spreadsheet
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') refreshAll();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // Auto-refresh setiap 5 menit selagi app terbuka
+    const interval = setInterval(refreshAll, 5 * 60 * 1000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(interval);
+    };
+  }, [refreshAll]);
 
   return (
     <div className="min-h-screen bg-[#f8f9fb] mx-auto max-w-[420px] relative shadow-2xl">

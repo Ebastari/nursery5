@@ -18,6 +18,7 @@ export interface SubmitActivityResponse {
   message?: string;
   error?: string;
   nomorSurat?: string;
+  kodeVerifikasi?: string;
   linkPdf?: string;
 }
 
@@ -86,7 +87,7 @@ export interface DropdownOptions {
 
 
 export const API_URL =
-  "https://script.google.com/macros/s/AKfycbyGp8v0O4yW3BdLBCSDVBE9g1JPBmiFPDNsnNczypOQ0PCJJsqdsI1JCtSUkrztY-VZ/exec";
+  "https://script.google.com/macros/s/AKfycbygs7jwtJElftn0F6ZZbGXU3Zhv0ncD4C2wwit_7AM1qZOhIaXBwOtM7gNp-_dRMwyI/exec";
 
 let cachedRows: ApiRow[] | null = null;
 
@@ -205,6 +206,31 @@ export async function fetchDropdowns(): Promise<DropdownOptions> {
 
 export function clearCache() {
   cachedRows = null;
+}
+
+export async function uploadPdfToDrive(
+  blob: Blob,
+  filename: string,
+  nomorSurat: string,
+): Promise<string> {
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+  const url = import.meta.env.DEV ? '/api/gas' : API_URL;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: 'savePdf', pdfData: base64, filename, nomorSurat }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  if (text.trimStart().startsWith('<')) throw new Error('Apps Script error');
+  const json = JSON.parse(text);
+  if (!json.success) throw new Error(json.error || 'Upload gagal');
+  return json.link as string;
 }
 
 export interface ConfirmDeliveryPayload {

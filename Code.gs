@@ -171,6 +171,7 @@ function doPost(e) {
     // Data
     if (action === 'approve')         return handleApprove(body);
     if (action === 'confirmDelivery') return handleConfirmDelivery(body);
+    if (action === 'savePdf')         return handleSavePdf(body);
 
     // Default: submit data bibit
     return handleSubmitActivity(body);
@@ -412,6 +413,52 @@ function handleConfirmDelivery(body) {
     return jsonOk({ message: 'Penerimaan dikonfirmasi', tanggalTerima: tgl });
   }
   return jsonErr('Kode verifikasi tidak ditemukan');
+}
+
+// ============================================================
+// SAVE PDF — Simpan PDF ke Google Drive & update linkPdf di sheet
+// ============================================================
+function handleSavePdf(body) {
+  var pdfBase64  = body.pdfData   || '';
+  var filename   = body.filename  || 'Surat-Jalan.pdf';
+  var nomorSurat = body.nomorSurat || '';
+
+  if (!pdfBase64) return jsonErr('Data PDF tidak boleh kosong');
+
+  // Decode base64 dan buat blob PDF
+  var bytes = Utilities.base64Decode(pdfBase64);
+  var blob  = Utilities.newBlob(bytes, 'application/pdf', filename);
+
+  // Buat/cari folder di Drive
+  var folderName = 'Surat Jalan - Smart Nursery';
+  var folders    = DriveApp.getFoldersByName(folderName);
+  var folder     = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+
+  // Simpan file & set akses siapa saja dengan link bisa lihat
+  var file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  var link = file.getUrl();
+
+  // Update kolom linkPdf di sheet agar muncul di panel home
+  if (nomorSurat) {
+    var sheet = getSheet(SHEET_DATA);
+    if (sheet) {
+      var rows       = sheet.getDataRange().getValues();
+      var headers    = rows[0].map(function(h) { return String(h).trim(); });
+      var nomorIdx   = headers.indexOf('nomorSurat');
+      var linkPdfIdx = headers.indexOf('linkPdf');
+      if (nomorIdx >= 0 && linkPdfIdx >= 0) {
+        for (var i = 1; i < rows.length; i++) {
+          if (String(rows[i][nomorIdx]).trim() === nomorSurat.trim()) {
+            sheet.getRange(i + 1, linkPdfIdx + 1).setValue(link);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return jsonOk({ link: link });
 }
 
 // ============================================================

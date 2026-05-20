@@ -8,6 +8,7 @@ import type { ApiRow } from '../data/api';
 import { useStore } from '../store/useStore';
 import QRCode from 'qrcode';
 import { generateSuratJalanPdf } from '../utils/generateSuratJalanPdf';
+import { uploadPdfToDrive } from '../data/api';
 
 const COMPANY_LOGO = 'https://i.ibb.co/xSTT9wJK/download.png';
 const COMPANY_NAME = 'PT Energi Batubara Lestari';
@@ -56,11 +57,30 @@ export function SuratJalanScreen() {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  // Nomor surat dan dokumen terkait
-  const nomorSurat: string = row ? generateNomorSurat(row, rowIndex) : '';
+  // Nomor surat — gunakan nilai dari server (row.nomorSurat) agar cocok dengan spreadsheet saat upload ke Drive
+  const nomorSurat: string = row ? (row.nomorSurat || generateNomorSurat(row, rowIndex)) : '';
   // const doc = nomorSurat ? documents.find((d) => d.nomor === nomorSurat) : undefined;
 
   // ...hapus getApprovalStatus dan logic approval...
+
+  // Refresh saat user kembali ke tab
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchApiData().then((rows) => {
+          setAllRows(rows);
+          const distribusi = rows.filter((r) => r.keluar > 0);
+          const selected = distribusi[rowIndex] || distribusi[distribusi.length - 1];
+          if (selected) {
+            setRow(selected);
+            setKodeVerifikasi(selected.kodeVerifikasi || '');
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [rowIndex]);
 
   // Load data
   useEffect(() => {
@@ -169,6 +189,7 @@ export function SuratJalanScreen() {
         tujuan: row.tujuan || '-',
         sisaStok: stokSetelah,
         dibuatOleh: row.dibuatOleh || '-',
+        disetujuiOleh: row.approvedBy || '',
         driver: row.driver || '-',
         kodeVerifikasi: kodeVerifikasi || 'PREVIEW',
         logoDataUrl,
@@ -177,14 +198,18 @@ export function SuratJalanScreen() {
         companyUnit: COMPANY_UNIT,
         companyAddress: COMPANY_ADDRESS,
       });
+      const filename = `${draft ? 'DRAFT-' : ''}Surat-Jalan-${nomorSurat.replace(/\//g, '-')}.pdf`;
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${draft ? 'DRAFT-' : ''}Surat-Jalan-${nomorSurat.replace(/\//g, '-')}.pdf`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      // Upload ke Drive di background — hanya untuk dokumen final
+      if (!draft) uploadPdfToDrive(blob, filename, nomorSurat).catch(() => {});
     } catch (err) {
       console.error('PDF generation error:', err);
     } finally {
@@ -318,7 +343,7 @@ export function SuratJalanScreen() {
           <div className="grid grid-cols-3 gap-2 pt-1">
             {([
               { label: 'Dibuat oleh', bold: false, name: row.dibuatOleh && row.dibuatOleh !== '-' ? row.dibuatOleh : '', role: 'Petugas Nursery' },
-              { label: 'Disetujui', bold: true, name: 'Mariano Alvarado Simamor', role: 'Dept Head Revegetasi & Rehabilitasi' },
+              { label: 'Disetujui', bold: true, name: row.approvedBy || '', role: 'Dept Head Revegetasi & Rehabilitasi' },
               { label: 'Driver', bold: false, name: row.driver && row.driver !== '-' ? row.driver : '', role: 'Sopir / Kurir' },
             ] as const).map(({ label, bold, name, role }) => (
               <div key={label} className="flex flex-col items-center gap-1">

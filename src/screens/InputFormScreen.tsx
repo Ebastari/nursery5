@@ -3,8 +3,20 @@ import { Loader2, CheckCircle2, ExternalLink, RefreshCw, AlertCircle, Download }
 import { loadOptions } from '../components/chatbot/chatbotLogic';
 import type { DropdownData } from '../components/chatbot/chatbotLogic';
 import { api } from '../data/mockData';
-import { invalidateCache } from '../data/api';
+import { invalidateCache, uploadPdfToDrive } from '../data/api';
+import { generateSuratJalanPdf } from '../utils/generateSuratJalanPdf';
 import { useStore } from '../store/useStore';
+
+const COMPANY_LOGO = 'https://i.ibb.co/xSTT9wJK/download.png';
+const COMPANY_NAME = 'PT Energi Batubara Lestari';
+const COMPANY_UNIT = 'Unit Nursery';
+const COMPANY_ADDRESS = 'Kalimantan Selatan';
+
+function formatTanggal(tanggal: string): string {
+  const d = new Date(tanggal);
+  if (isNaN(d.getTime())) return tanggal;
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -23,6 +35,7 @@ interface FormState {
 
 interface SuccessData {
   nomorSurat: string;
+  kodeVerifikasi: string;
   linkPdf: string;
   formState?: FormState;
   sisaStok?: number;
@@ -182,29 +195,64 @@ function BibitSelect({
 
 // ── Success screen ─────────────────────────────────────────────────────────────
 
-function toDownloadUrl(url: string): string {
-  // Convert Google Drive share URL to direct download URL so users get the same backend PDF.
-  const m = url.match(/\/file\/d\/([^/]+)/);
-  if (m?.[1]) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
-  return url;
-}
-
 function SuccessScreen({ data, onReset }: { data: SuccessData; onReset: () => void }) {
   const [generating, setGenerating] = useState(false);
   const isKeluar = data.formState?.action === 'keluar';
 
   const handleDownloadPdf = async () => {
-    if (!data.linkPdf) return;
+    if (!data.formState) return;
     setGenerating(true);
     try {
+      let logoDataUrl = '';
+      try {
+        logoDataUrl = await new Promise<string>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) { ctx.drawImage(img, 0, 0); resolve(canvas.toDataURL('image/png')); }
+            else resolve('');
+          };
+          img.onerror = () => resolve('');
+          img.src = COMPANY_LOGO;
+        });
+      } catch { /* lanjut tanpa logo */ }
+
+      const blob = await generateSuratJalanPdf({
+        nomorSurat: data.nomorSurat,
+        tanggal: formatTanggal(data.formState.tanggal),
+        jenisBibit: data.formState.bibit,
+        jumlah: Number(data.formState.jumlah),
+        sumber: data.formState.sumber,
+        tujuan: data.formState.tujuan,
+        sisaStok: data.sisaStok ?? 0,
+        dibuatOleh: data.formState.dibuatOleh,
+        driver: data.formState.driver,
+        kodeVerifikasi: data.kodeVerifikasi,
+        logoDataUrl,
+        isDraft: false,
+        companyName: COMPANY_NAME,
+        companyUnit: COMPANY_UNIT,
+        companyAddress: COMPANY_ADDRESS,
+      });
+
+      const filename = `Surat-Jalan-${data.nomorSurat.replace(/\//g, '-')}.pdf`;
+
+      // Download ke perangkat user
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = toDownloadUrl(data.linkPdf);
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.download = '';
+      a.href = url;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Upload ke Drive di background — tidak blokir user
+      uploadPdfToDrive(blob, filename, data.nomorSurat).catch(() => {});
     } catch (err) {
       console.error('PDF error:', err);
     } finally {
@@ -362,8 +410,10 @@ export function InputFormScreen() {
       const bibitKey = form.bibit.trim().toUpperCase();
       const stokSebelum = stokMap[bibitKey] ?? 0;
       const sisaStok = Math.max(0, stokSebelum - (form.action === 'keluar' ? Number(form.jumlah) : 0));
+      const res = result as unknown as Record<string, string>;
       setSuccess({
-        nomorSurat: (result as unknown as Record<string, string>).nomorSurat ?? '',
+        nomorSurat: res.nomorSurat ?? '',
+        kodeVerifikasi: res.kodeVerifikasi ?? '',
         linkPdf: result.linkPdf ?? '',
         formState: form,
         sisaStok,

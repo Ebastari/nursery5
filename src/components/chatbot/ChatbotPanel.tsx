@@ -23,6 +23,7 @@ import {
 } from './chatbotLogic';
 import { generateSuratJalanPdf } from '../../utils/generateSuratJalanPdf';
 import { api } from '../../data/mockData';
+import { submitActivity, invalidateCache, uploadPdfToDrive } from '../../data/api';
 
 // â”€â”€ Montana AI "” Data & Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -708,10 +709,38 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
   // â”€â”€ Generate PDF inline (Surat Jalan agent) â”€â”€
   const generateInlinePdf = useCallback(async (form: SuratJalanFormData) => {
     setSubmitting(true);
-    addMsg('bot', 'Membuat dokumen Surat Jalan...');
+    addMsg('bot', 'Menyimpan data dan membuat dokumen Surat Jalan...');
 
     try {
-      // Load logo as data URL
+      const d = new Date();
+      const jumlah = Number(form.jumlah);
+      const tanggal = d.toISOString().split('T')[0];
+      const tanggalFormatted = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+
+      // 1. Simpan ke Google Sheets — supaya muncul di panel home
+      const result = await submitActivity({
+        tanggal,
+        bibit: form.bibit,
+        masuk: 0,
+        keluar: jumlah,
+        mati: 0,
+        sumber: form.sumber,
+        tujuan: form.tujuan,
+        dibuatOleh: form.dibuatOleh,
+        driver: form.driver,
+      });
+
+      // Gunakan nomorSurat & kodeVerifikasi dari server agar konsisten dengan data di home
+      const bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+      const nomorSurat = result.nomorSurat
+        ?? `SJ-BIBIT/${String(Math.floor(Math.random() * 9000) + 1000)}/${bulanRomawi[d.getMonth()]}/${d.getFullYear()}`;
+      const kodeVerifikasi = result.kodeVerifikasi
+        ?? Math.random().toString(36).substring(2, 10).toUpperCase();
+
+      // 2. Invalidate cache supaya SuratJalanScreen & home langsung tampil data baru
+      invalidateCache();
+
+      // 3. Load logo
       let logoDataUrl = '';
       try {
         logoDataUrl = await new Promise<string>((resolve) => {
@@ -728,35 +757,37 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
           img.onerror = () => resolve('');
           img.src = LOGO;
         });
-      } catch { /* use empty logo */ }
+      } catch { /* lanjut tanpa logo */ }
 
-      const d = new Date();
-      const bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-      const nomor = String(Math.floor(Math.random() * 9000) + 1000);
-      const nomorSurat = `SJ-BIBIT/${nomor}/${bulanRomawi[d.getMonth()]}/${d.getFullYear()}`;
-      const kodeVerifikasi = Math.random().toString(36).substring(2, 10).toUpperCase();
-      const jumlah = Number(form.jumlah);
-      const tanggal = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
       const sisaStok = Math.max(0, (stokMap[form.bibit.toUpperCase()] ?? 0) - jumlah);
+
+      // 4. Generate PDF dengan data yang sama persis seperti yang tersimpan di server
       const pdfBlob = await generateSuratJalanPdf({
         nomorSurat,
-        tanggal,
+        tanggal: tanggalFormatted,
         jenisBibit: form.bibit,
         jumlah,
         sumber: form.sumber,
         tujuan: form.tujuan,
         sisaStok,
         dibuatOleh: form.dibuatOleh,
+        disetujuiOleh: '',
         driver: form.driver,
         kodeVerifikasi,
         logoDataUrl,
         isDraft: false,
+        companyName: 'PT Energi Batubara Lestari',
+        companyUnit: 'Unit Nursery',
+        companyAddress: 'Kalimantan Selatan',
       });
 
-      const blobUrl = URL.createObjectURL(pdfBlob);
       const pdfName = `Surat-Jalan-${nomorSurat.replace(/\//g, '-')}.pdf`;
+      const blobUrl = URL.createObjectURL(pdfBlob);
 
-      addMsg('bot', `**Surat Jalan berhasil dibuat.**\nNo: **${nomorSurat}**\nKode Verifikasi: \`${kodeVerifikasi}\``);
+      // Upload ke Drive di background — tidak blokir user
+      uploadPdfToDrive(pdfBlob, pdfName, nomorSurat).catch(() => {});
+
+      addMsg('bot', `**Surat Jalan berhasil dibuat dan tersimpan.**\nNo: **${nomorSurat}**\nKode Verifikasi: \`${kodeVerifikasi}\`\n\nData sudah muncul di panel Surat Jalan.`);
 
       setMessages((prev) => [
         ...prev,
@@ -772,7 +803,7 @@ export function ChatbotPanel({ onClose, mode: initialMode = 'input' }: { onClose
 
       setSjStep('sj_done');
     } catch (err: unknown) {
-      addMsg('bot', `Gagal membuat PDF: ${err instanceof Error ? err.message : 'Error tidak diketahui'}\n\nSilakan coba lagi.`);
+      addMsg('bot', `Gagal membuat Surat Jalan: ${err instanceof Error ? err.message : 'Error tidak diketahui'}\n\nSilakan coba lagi.`);
     }
 
     setSubmitting(false);
