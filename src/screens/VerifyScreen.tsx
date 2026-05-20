@@ -5,10 +5,11 @@ import {
   CheckCircle, MapPin,
 } from 'lucide-react';
 import { Button } from '../components/Button';
-import { verifyCode, confirmDelivery } from '../data/api';
+import { verifyCode, confirmDelivery, uploadPdfToDrive } from '../data/api';
 import type { VerifyResult } from '../data/api';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useStore } from '../store/useStore';
+import { generateSuratJalanPdf } from '../utils/generateSuratJalanPdf';
 
 function formatTanggal(tanggal: string): string {
   const d = new Date(tanggal);
@@ -97,9 +98,36 @@ export function VerifyScreen() {
     setConfirmLoading(true);
     setConfirmError('');
     try {
+      const tanggalTerima = new Date().toISOString();
       await confirmDelivery({ kodeVerifikasi: kode, namaPenerima: confirmName.trim(), jumlahDiterima: confirmQty });
       setConfirmSuccess(true);
       setShowConfirmForm(false);
+
+      // Generate PDF bukti penerimaan di background lalu upload ke Drive
+      if (result) {
+        generateSuratJalanPdf({
+          nomorSurat: kode,
+          tanggal: result.tanggal
+            ? new Date(result.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+            : new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
+          jenisBibit: result.bibit || '-',
+          jumlah: result.keluar || 0,
+          sumber: result.sumber || '',
+          tujuan: result.tujuan || '',
+          sisaStok: 0,
+          dibuatOleh: '-',
+          driver: '-',
+          kodeVerifikasi: kode,
+          namaPenerima: confirmName.trim(),
+          tanggalTerima,
+          jumlahDiterima: confirmQty,
+        }).then((blob) => {
+          const filename = `Bukti-Terima-${kode.replace(/[^A-Z0-9]/gi, '-')}.pdf`;
+          // nomorSurat kosong, lookup via kodeVerifikasi
+          return uploadPdfToDrive(blob, filename, '', kode);
+        }).catch(() => {});
+      }
+
       refreshAll(); // perbarui notifikasi & statusKirim di seluruh app
     } catch (err) {
       setConfirmError(err instanceof Error ? err.message : 'Konfirmasi gagal');

@@ -87,7 +87,7 @@ export interface DropdownOptions {
 
 
 export const API_URL =
-  "https://script.google.com/macros/s/AKfycbygs7jwtJElftn0F6ZZbGXU3Zhv0ncD4C2wwit_7AM1qZOhIaXBwOtM7gNp-_dRMwyI/exec";
+  "https://script.google.com/macros/s/AKfycbwi8jlfe0gXeIMEJl6spueLbAzEjLpzZRg4vpoV08g99a30q89kMc7gLQbCBMHUA_-i/exec";
 
 let cachedRows: ApiRow[] | null = null;
 
@@ -227,6 +227,7 @@ export async function uploadPdfToDrive(
   blob: Blob,
   filename: string,
   nomorSurat: string,
+  kodeVerifikasi?: string,
 ): Promise<string> {
   const base64 = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -238,7 +239,7 @@ export async function uploadPdfToDrive(
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: 'savePdf', pdfData: base64, filename, nomorSurat }),
+    body: JSON.stringify({ action: 'savePdf', pdfData: base64, filename, nomorSurat, kodeVerifikasi }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const text = await res.text();

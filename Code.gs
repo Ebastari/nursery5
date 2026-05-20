@@ -419,9 +419,10 @@ function handleConfirmDelivery(body) {
 // SAVE PDF — Simpan PDF ke Google Drive & update linkPdf di sheet
 // ============================================================
 function handleSavePdf(body) {
-  var pdfBase64  = body.pdfData   || '';
-  var filename   = body.filename  || 'Surat-Jalan.pdf';
-  var nomorSurat = body.nomorSurat || '';
+  var pdfBase64      = body.pdfData        || '';
+  var filename       = body.filename       || 'Surat-Jalan.pdf';
+  var nomorSurat     = body.nomorSurat     || '';
+  var kodeVerifikasi = body.kodeVerifikasi || '';
 
   if (!pdfBase64) return jsonErr('Data PDF tidak boleh kosong');
 
@@ -439,17 +440,20 @@ function handleSavePdf(body) {
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   var link = file.getUrl();
 
-  // Update kolom linkPdf di sheet agar muncul di panel home
-  if (nomorSurat) {
+  // Update kolom linkPdf — cari baris by nomorSurat, fallback by kodeVerifikasi
+  if (nomorSurat || kodeVerifikasi) {
     var sheet = getSheet(SHEET_DATA);
     if (sheet) {
       var rows       = sheet.getDataRange().getValues();
       var headers    = rows[0].map(function(h) { return String(h).trim(); });
       var nomorIdx   = headers.indexOf('nomorSurat');
+      var kodeIdx    = headers.indexOf('kodeVerifikasi');
       var linkPdfIdx = headers.indexOf('linkPdf');
-      if (nomorIdx >= 0 && linkPdfIdx >= 0) {
+      if (linkPdfIdx >= 0) {
         for (var i = 1; i < rows.length; i++) {
-          if (String(rows[i][nomorIdx]).trim() === nomorSurat.trim()) {
+          var matchNomor = nomorSurat && nomorIdx >= 0 && String(rows[i][nomorIdx]).trim() === nomorSurat.trim();
+          var matchKode  = kodeVerifikasi && kodeIdx >= 0 && String(rows[i][kodeIdx]).trim() === kodeVerifikasi.trim();
+          if (matchNomor || matchKode) {
             sheet.getRange(i + 1, linkPdfIdx + 1).setValue(link);
             break;
           }

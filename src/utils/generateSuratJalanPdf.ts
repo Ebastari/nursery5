@@ -60,6 +60,10 @@ export interface SuratJalanPdfData {
   companyName?: string;
   companyUnit?: string;
   companyAddress?: string;
+  /** Bukti penerimaan — diisi setelah konfirmasi lapangan */
+  namaPenerima?: string;
+  tanggalTerima?: string;
+  jumlahDiterima?: number;
 }
 
 // ── Main generator ─────────────────────────────────────────────────────────────
@@ -280,6 +284,49 @@ export async function generateSuratJalanPdf(data: SuratJalanPdfData): Promise<Bl
     errorCorrectionLevel: 'M',
     color: { dark: '#000000', light: '#ffffff' },
   });
+  // ── Bukti Penerimaan (jika sudah dikonfirmasi) ──
+  if (data.namaPenerima && data.tanggalTerima) {
+    const TEAL: [number, number, number] = [13, 148, 136];
+    doc.setFillColor(...TEAL);
+    doc.roundedRect(margin, y, contentW, 8, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BUKTI PENERIMAAN', margin + contentW / 2, y + 5.5, { align: 'center' });
+    y += 11;
+
+    doc.setFillColor(240, 253, 250);
+    doc.setDrawColor(...TEAL);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(margin, y, contentW, 20, 2, 2, 'FD');
+
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    const col2 = margin + contentW / 2;
+    doc.text('Nama Penerima', margin + 4, y + 6);
+    doc.text(':', col2 - 10, y + 6);
+    doc.setFont('helvetica', 'bold');
+    doc.text(data.namaPenerima, col2 - 6, y + 6);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text('Tanggal Terima', margin + 4, y + 12);
+    doc.text(':', col2 - 10, y + 12);
+    doc.setFont('helvetica', 'bold');
+    const tgl = data.tanggalTerima
+      ? new Date(data.tanggalTerima).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+      : data.tanggalTerima;
+    doc.text(tgl, col2 - 6, y + 12);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text('Jumlah Diterima', margin + 4, y + 18);
+    doc.text(':', col2 - 10, y + 18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${(data.jumlahDiterima ?? 0).toLocaleString('id-ID')} polybag`, col2 - 6, y + 18);
+
+    y += 24;
+  }
+
   doc.addImage(qrDataUrl, 'PNG', margin, y, qrSize, qrSize);
 
   const qrTextX = margin + qrSize + 6;
@@ -319,7 +366,7 @@ export async function generateSuratJalanPdf(data: SuratJalanPdfData): Promise<Bl
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.text(
-    data.isDraft ? 'DOKUMEN DRAFT' : 'Dokumen Resmi — Siap Distribusi',
+    data.isDraft ? 'DOKUMEN DRAFT' : data.namaPenerima ? 'Terkirim & Diterima — Dokumen Selesai' : 'Dokumen Resmi — Siap Distribusi',
     pageW - margin - badgeW + badgeW / 2,
     y + 5.8,
     { align: 'center' }

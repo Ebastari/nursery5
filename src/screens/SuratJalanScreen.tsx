@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Printer, Eye, Send } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Printer, Eye, Send, CheckCircle, ExternalLink } from 'lucide-react';
 import DocumentPreview from '../components/DocumentPreview';
 import { Button } from '../components/Button';
 import { fetchApiData } from '../data/api';
@@ -360,30 +360,53 @@ export function SuratJalanScreen() {
             ))}
           </div>
 
-          {/* QR Code + Footer */}
-          <div className="border-t border-gray-200 pt-4 flex items-start gap-3">
-            {qrDataUrl && (
-              <img src={qrDataUrl} alt="QR Verification" className="w-20 h-20 rounded-lg border border-gray-200" />
-            )}
-            <div className="flex-1 space-y-1">
-              <p className="text-[10px] font-semibold text-gray-700">Scan QR Code untuk verifikasi</p>
-              <p className="text-[9px] text-gray-400">
-                Verifikasi keaslian dokumen ini melalui fitur Scanner di aplikasi Smart Nursery.
-              </p>
-              {kodeVerifikasi && kodeVerifikasi !== 'PREVIEW' && (
-                <p className="text-[9px] font-mono text-gray-400 mt-0.5">
-                  Kode: {kodeVerifikasi}
-                </p>
-              )}
-              <div className="pt-1.5">
-                <p className="text-[8px] text-gray-300">
-                  Dicetak otomatis oleh Montana AI Engine
-                </p>
-                <p className="text-[8px] text-gray-300">
-                  {COMPANY_NAME} "” {COMPANY_UNIT}
-                </p>
+          {/* QR Code + Footer — ganti dengan bukti penerimaan jika sudah Terkirim */}
+          <div className=”border-t border-gray-200 pt-4”>
+            {row?.statusKirim === 'Terkirim' && row?.linkPdf ? (
+              <div className=”flex items-center gap-3 p-3 rounded-xl bg-teal-50 border border-teal-200”>
+                <CheckCircle className=”w-8 h-8 text-teal-600 shrink-0” />
+                <div className=”flex-1 min-w-0”>
+                  <p className=”text-[11px] font-bold text-teal-800”>Bibit Sudah Diterima</p>
+                  {row.namaPenerima && (
+                    <p className=”text-[10px] text-teal-600 mt-0.5”>Diterima oleh: <strong>{row.namaPenerima}</strong></p>
+                  )}
+                  {row.tanggalTerima && (
+                    <p className=”text-[10px] text-teal-600”>
+                      {new Date(row.tanggalTerima).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    </p>
+                  )}
+                  <a
+                    href={row.linkPdf}
+                    target=”_blank”
+                    rel=”noopener noreferrer”
+                    className=”inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-teal-700 underline underline-offset-2”
+                  >
+                    <ExternalLink className=”w-3 h-3” /> Lihat PDF Bukti Penerimaan
+                  </a>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className=”flex items-start gap-3”>
+                {qrDataUrl && (
+                  <img src={qrDataUrl} alt=”QR Verification” className=”w-20 h-20 rounded-lg border border-gray-200” />
+                )}
+                <div className=”flex-1 space-y-1”>
+                  <p className=”text-[10px] font-semibold text-gray-700”>Scan QR Code untuk verifikasi</p>
+                  <p className=”text-[9px] text-gray-400”>
+                    Verifikasi keaslian dokumen ini melalui fitur Scanner di aplikasi Smart Nursery.
+                  </p>
+                  {kodeVerifikasi && kodeVerifikasi !== 'PREVIEW' && (
+                    <p className=”text-[9px] font-mono text-gray-400 mt-0.5”>
+                      Kode: {kodeVerifikasi}
+                    </p>
+                  )}
+                  <div className=”pt-1.5”>
+                    <p className=”text-[8px] text-gray-300”>Dicetak otomatis oleh Montana AI Engine</p>
+                    <p className=”text-[8px] text-gray-300”>{COMPANY_NAME} — {COMPANY_UNIT}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
