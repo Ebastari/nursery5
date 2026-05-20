@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Phone, Lock, Eye, EyeOff, Loader2, MessageSquare, RotateCcw, ArrowLeft, CheckCircle } from 'lucide-react';
 import { requestOtp, resetPassword } from '../data/api';
 
-const COMPANY_LOGO = 'https://i.ibb.co.com/xSTT9wJK/download.png';
+const COMPANY_LOGO = 'https://i.ibb.co/xSTT9wJK/download.png';
 const OTP_LENGTH = 4;
 const OTP_EXPIRE_SECONDS = 300;
 
@@ -152,10 +152,10 @@ export function ForgotPasswordScreen() {
             <img src={COMPANY_LOGO} alt="Logo" className="w-12 h-12 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Smart Nursery</h1>
-          <p className="text-xs text-gray-500 mt-1">PT Energi Batubara Lestari — Unit Nursery</p>
+          <p className="text-xs text-gray-500 mt-1">PT Energi Batubara Lestari â€” Unit Nursery</p>
         </div>
 
-        {/* STEP 1 — Nomor HP */}
+        {/* STEP 1 â€” Nomor HP */}
         {step === 'phone' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
             <div className="flex items-center gap-3">
@@ -195,7 +195,7 @@ export function ForgotPasswordScreen() {
           </div>
         )}
 
-        {/* STEP 2 — OTP */}
+        {/* STEP 2 â€” OTP */}
         {step === 'otp' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
             <div className="flex items-center gap-3">
@@ -233,7 +233,7 @@ export function ForgotPasswordScreen() {
           </div>
         )}
 
-        {/* STEP 3 — Password Baru */}
+        {/* STEP 3 â€” Password Baru */}
         {step === 'newpass' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
             <h2 className="text-lg font-bold text-gray-900">Password Baru</h2>
@@ -284,7 +284,7 @@ export function ForgotPasswordScreen() {
           </div>
         )}
 
-        {/* STEP 4 — Selesai */}
+        {/* STEP 4 â€” Selesai */}
         {step === 'done' && (
           <div className="bg-white rounded-2xl shadow-sm border border-emerald-200 p-8 text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto">

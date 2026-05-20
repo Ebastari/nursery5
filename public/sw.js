@@ -1,7 +1,6 @@
-const CACHE_NAME = 'smart-nursery-v2';
+const CACHE_NAME = 'smart-nursery-v3';
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.json'];
 
-// Install: cache shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -9,7 +8,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: hapus cache lama
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -19,28 +17,39 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first untuk API, cache-first untuk asset
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip non-GET
+  // Hanya handle GET
   if (event.request.method !== 'GET') return;
 
-  // API calls — network only (IndexedDB handles offline data)
+  // Jangan intercept: API GAS, extension, non-http
+  if (!url.protocol.startsWith('http')) return;
   if (url.hostname === 'script.google.com') return;
+  if (url.hostname === 'api.fonnte.com') return;
 
-  // App assets — stale-while-revalidate
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetchPromise = fetch(event.request)
         .then((response) => {
-          if (response && response.status === 200 && response.type === 'basic') {
+          // Hanya cache response yang valid dari origin sendiri
+          if (
+            response &&
+            response.status === 200 &&
+            response.type === 'basic'
+          ) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
           return response;
         })
-        .catch(() => cached);
+        .catch(() => {
+          // Jika fetch gagal, kembalikan cache jika ada
+          return cached || new Response('Offline', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' },
+          });
+        });
 
       return cached || fetchPromise;
     })

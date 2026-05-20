@@ -1,9 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Phone, Lock, Eye, EyeOff, LogIn, Loader2, KeyRound } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
-const COMPANY_LOGO = 'https://i.ibb.co.com/xSTT9wJK/download.png';
+const COMPANY_LOGO = 'https://i.ibb.co/xSTT9wJK/download.png';
 
 export function LoginScreen() {
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ export function LoginScreen() {
             <img src={COMPANY_LOGO} alt="Logo" className="w-12 h-12 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Smart Nursery</h1>
-          <p className="text-xs text-gray-500 mt-1">PT Energi Batubara Lestari — Unit Nursery</p>
+          <p className="text-xs text-gray-500 mt-1">PT Energi Batubara Lestari â€” Unit Nursery</p>
         </div>
 
         {/* Card */}
@@ -75,7 +75,7 @@ export function LoginScreen() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                placeholder="••••••••"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 className="w-full pl-9 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 transition"
               />
               <button

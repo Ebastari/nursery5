@@ -1,9 +1,9 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+﻿import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Camera, Package, Bell, ExternalLink } from 'lucide-react';
 import { NotificationBell } from '../components/NotificationBell';
 import { useStore } from '../store/useStore';
 
-const COMPANY_LOGO = 'https://i.ibb.co.com/xSTT9wJK/download.png';
+const COMPANY_LOGO = 'https://i.ibb.co/xSTT9wJK/download.png';
 
 const navItems = [
   { to: '/', icon: LayoutGrid, label: 'Home' },
@@ -34,7 +34,7 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fb] mx-auto max-w-[420px] relative shadow-2xl">
-      {/* Top Header — Premium gradient */}
+      {/* Top Header â€” Premium gradient */}
       <header className="sticky top-0 z-50 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 text-white px-5 flex items-center gap-3.5 h-14 shadow-[0_2px_12px_rgba(5,150,105,0.25)]">
         <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center backdrop-blur-sm overflow-hidden">
           <img src={COMPANY_LOGO} alt="Logo" className="w-7 h-7 object-contain" />
@@ -64,7 +64,7 @@ export function Layout() {
         <Outlet />
       </main>
 
-      {/* Bottom Navigation — Frosted glass */}
+      {/* Bottom Navigation â€” Frosted glass */}
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-white/80 backdrop-blur-xl border-t border-gray-200/60 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
         <div className="flex items-center justify-around h-[4.25rem]">
           {navItems.map(({ to, icon: Icon, label, center }) => (

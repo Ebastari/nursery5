@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Printer, Eye, Send } from 'lucide-react';
 import DocumentPreview from '../components/DocumentPreview';
@@ -9,7 +9,7 @@ import { useStore } from '../store/useStore';
 import QRCode from 'qrcode';
 import { generateSuratJalanPdf } from '../utils/generateSuratJalanPdf';
 
-const COMPANY_LOGO = 'https://i.ibb.co.com/xSTT9wJK/download.png';
+const COMPANY_LOGO = 'https://i.ibb.co/xSTT9wJK/download.png';
 const COMPANY_NAME = 'PT Energi Batubara Lestari';
 const COMPANY_UNIT = 'Unit Nursery';
 const COMPANY_ADDRESS = 'Kalimantan Selatan';
@@ -67,7 +67,7 @@ export function SuratJalanScreen() {
     fetchApiData().then((rows) => {
       setAllRows(rows);
 
-      // Jika preview dari form input — buat row virtual dari query params
+      // Jika preview dari form input â€” buat row virtual dari query params
       if (isFormPreview) {
         const formRow: ApiRow = {
           tanggal: searchParams.get('tanggal') || new Date().toISOString().split('T')[0],
@@ -102,7 +102,7 @@ export function SuratJalanScreen() {
   // Generate QR code with verification code
   useEffect(() => {
     if (!row || !kodeVerifikasi) return;
-    // QR berisi kode verifikasi saja — hanya bisa diverifikasi lewat scanner di aplikasi
+    // QR berisi kode verifikasi saja â€” hanya bisa diverifikasi lewat scanner di aplikasi
     const qrContent = `VERIFY:${kodeVerifikasi}`;
     QRCode.toDataURL(qrContent, {
       width: 140,
@@ -155,7 +155,7 @@ export function SuratJalanScreen() {
   // ...hapus logic approval preview...
   // ...hapus variabel tidak terpakai...
 
-  // === PDF Generation — delegates to canonical generateSuratJalanPdf ===
+  // === PDF Generation â€” delegates to canonical generateSuratJalanPdf ===
   const generatePDF = useCallback(async (draft: boolean) => {
     if (!row) return;
     setGenerating(true);
@@ -227,7 +227,7 @@ export function SuratJalanScreen() {
         </div>
       </div>
 
-      {/* Preview Card — Surat Jalan */}
+      {/* Preview Card â€” Surat Jalan */}
       <div ref={previewRef} className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden relative">
         {/* DRAFT Watermark Overlay */}
         {isDraft && (
@@ -250,7 +250,7 @@ export function SuratJalanScreen() {
           <div className="text-white">
             <p className="font-bold text-sm leading-tight">{COMPANY_NAME}</p>
             <p className="text-[11px] text-emerald-100">
-              {COMPANY_UNIT} — {COMPANY_ADDRESS}
+              {COMPANY_UNIT} â€” {COMPANY_ADDRESS}
             </p>
           </div>
         </div>
@@ -304,7 +304,7 @@ export function SuratJalanScreen() {
           {/* Stock info */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
             <span className="text-xs text-blue-700">
-              📦 Sisa stok <strong>{row.bibit}</strong> setelah distribusi:{' '}
+              ðŸ“¦ Sisa stok <strong>{row.bibit}</strong> setelah distribusi:{' '}
               <strong>{stokSetelah.toLocaleString('id-ID')}</strong> polybag
             </span>
           </div>
@@ -326,7 +326,7 @@ export function SuratJalanScreen() {
                 <div className="relative flex items-center justify-center w-full" style={{ height: '24px' }}>
                   <div className="absolute inset-x-0 border-b border-gray-300" style={{ top: '50%' }} />
                   <div className="relative z-10 w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center">
-                    <span className="text-white text-[9px] font-bold leading-none">✓</span>
+                    <span className="text-white text-[9px] font-bold leading-none">âœ“</span>
                   </div>
                 </div>
                 <p className="text-[9px] font-bold text-emerald-700 text-center leading-tight">{name}</p>
@@ -355,7 +355,7 @@ export function SuratJalanScreen() {
                   Dicetak otomatis oleh Montana AI Engine
                 </p>
                 <p className="text-[8px] text-gray-300">
-                  {COMPANY_NAME} — {COMPANY_UNIT}
+                  {COMPANY_NAME} â€” {COMPANY_UNIT}
                 </p>
               </div>
             </div>
@@ -367,7 +367,7 @@ export function SuratJalanScreen() {
       {isDraft && (
         <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-300">
           <Eye className="w-4 h-4 text-amber-600" />
-          <span className="text-sm font-semibold text-amber-800">Mode Draft — Review sebelum kirim</span>
+          <span className="text-sm font-semibold text-amber-800">Mode Draft â€” Review sebelum kirim</span>
         </div>
       )}
 
@@ -409,7 +409,7 @@ export function SuratJalanScreen() {
         ) : (
           <div className="space-y-2">
             <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 mb-2">
-              <span className="text-xs font-semibold text-emerald-700">✅ Dokumen Final — Siap Distribusi</span>
+              <span className="text-xs font-semibold text-emerald-700">âœ… Dokumen Final â€” Siap Distribusi</span>
             </div>
             <div className="flex gap-2">
               <Button
