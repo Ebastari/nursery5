@@ -86,7 +86,7 @@ export interface DropdownOptions {
 
 
 export const API_URL =
-  "https://script.google.com/macros/s/AKfycbyj7cIHG1XEC5eK2aGFVyugdymTpSLUpdyazacuUEgCu-ntjI6qWtSzOY7donPSSygk/exec";
+  "https://script.google.com/macros/s/AKfycbzVW4Hc61slYJhT8PRrTqrcprxhSmEe60B7e7PQzET4GX8_u3QFNLcJKRRJGojss8I/exec";
 
 let cachedRows: ApiRow[] | null = null;
 
