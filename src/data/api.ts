@@ -1,3 +1,5 @@
+import { saveRowsToDB, getRowsFromDB } from './indexedDb';
+
 // Kirim data aktivitas ke Google Spreadsheet (Apps Script)
 export interface SubmitActivityPayload {
   tanggal: string;
@@ -20,8 +22,7 @@ export interface SubmitActivityResponse {
 }
 
 export async function submitActivity(record: SubmitActivityPayload): Promise<SubmitActivityResponse> {
-  const isDev = import.meta.env && import.meta.env.DEV;
-  const url = isDev ? 'http://localhost:3001/api/proxy' : API_URL;
+  const url = import.meta.env.DEV ? '/api/gas' : API_URL;
   // Apps Script expects snake_case for beberapa field
   const payload = {
     tanggal: record.tanggal,
@@ -47,8 +48,6 @@ export async function submitActivity(record: SubmitActivityPayload): Promise<Sub
 }
 // === Live API — Google Apps Script ===
 
-import { saveRowsToDB, getRowsFromDB } from './indexedDb';
-
 export interface ApiRow {
   tanggal: string;
   bulan: string;
@@ -68,6 +67,10 @@ export interface ApiRow {
   linkPdf?: string;
   dibuatOleh?: string;
   driver?: string;
+  statusTerima?: string;
+  namaPenerima?: string;
+  tanggalTerima?: string;
+  jumlahDiterima?: number;
 }
 
 interface ApiResponse {
@@ -83,7 +86,7 @@ export interface DropdownOptions {
 
 
 export const API_URL =
-  "https://script.google.com/macros/s/AKfycbz1ihQ483EsmV-f7foHSVe5EJrxQ-l4_pC4tjUM5Ah27uaCc5oiecKupH450_LlvWwc/exec";
+  "https://script.google.com/macros/s/AKfycbyj7cIHG1XEC5eK2aGFVyugdymTpSLUpdyazacuUEgCu-ntjI6qWtSzOY7donPSSygk/exec";
 
 let cachedRows: ApiRow[] | null = null;
 
@@ -103,14 +106,11 @@ export async function approveDocument(nomorSurat: string, approvedBy: string): P
     status: "approved" as const
   };
 
-  const isDev = import.meta.env.DEV;
-  const url = isDev 
-    ? "http://localhost:3001/api/proxy"
-    : API_URL;
+  const url = import.meta.env.DEV ? '/api/gas' : API_URL;
 
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "text/plain" },
     body: JSON.stringify(payload),
   });
 
@@ -207,6 +207,36 @@ export function clearCache() {
   cachedRows = null;
 }
 
+export interface ConfirmDeliveryPayload {
+  kodeVerifikasi: string;
+  namaPenerima: string;
+  jumlahDiterima: number;
+}
+
+export interface ConfirmDeliveryResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  tanggalTerima?: string;
+}
+
+export async function confirmDelivery(payload: ConfirmDeliveryPayload): Promise<ConfirmDeliveryResponse> {
+  const body = { action: 'confirmDelivery', ...payload };
+  const proxyUrl = import.meta.env.DEV ? '/api/gas' : API_URL;
+  const res = await fetch(proxyUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  if (text.trimStart().startsWith('<')) throw new Error('Apps Script error — bukan JSON');
+  const data: ConfirmDeliveryResponse = JSON.parse(text);
+  if (!data.success) throw new Error(data.error || 'Konfirmasi gagal');
+  invalidateCache();
+  return data;
+}
+
 export interface VerifyResult {
   valid: boolean;
   tanggal?: string;
@@ -228,4 +258,158 @@ export async function verifyCode(code: string): Promise<VerifyResult> {
     throw new Error('Apps Script error — bukan JSON');
   }
   return JSON.parse(text);
+}
+
+// ── AUTH ──────────────────────────────────────────────────────
+
+function getAuthUrl() {
+  return import.meta.env.DEV ? '/api/gas' : API_URL;
+}
+
+async function authPost<T>(payload: Record<string, unknown>): Promise<T> {
+  const res = await fetch(getAuthUrl(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  if (text.trimStart().startsWith('<')) throw new Error('Apps Script error — bukan JSON');
+  return JSON.parse(text);
+}
+
+export interface RequestOtpResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export async function requestOtp(nomorHp: string): Promise<RequestOtpResponse> {
+  return authPost({ action: 'requestOtp', nomorHp });
+}
+
+export interface AuthUser {
+  nomorHp: string;
+  nama: string;
+  role: 'admin' | 'user';
+}
+
+export interface RegisterResponse {
+  success: boolean;
+  user?: AuthUser;
+  token?: string;
+  error?: string;
+}
+
+export async function registerUser(
+  nomorHp: string,
+  nama: string,
+  password: string,
+  inviteCode: string,
+): Promise<RegisterResponse> {
+  return authPost({ action: 'register', nomorHp, nama, password, inviteCode });
+}
+
+export interface LoginResponse {
+  success: boolean;
+  user?: AuthUser;
+  token?: string;
+  error?: string;
+}
+
+export async function loginUser(nomorHp: string, password: string): Promise<LoginResponse> {
+  return authPost({ action: 'login', nomorHp, password });
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export async function resetPassword(
+  nomorHp: string,
+  otp: string,
+  newPassword: string,
+): Promise<ResetPasswordResponse> {
+  return authPost({ action: 'resetPassword', nomorHp, otp, newPassword });
+}
+
+export async function changePassword(
+  nomorHp: string,
+  oldPassword: string,
+  newPassword: string,
+): Promise<ResetPasswordResponse> {
+  return authPost({ action: 'changePassword', nomorHp, oldPassword, newPassword });
+}
+
+// ── INVITE CODES ──────────────────────────────────────────────
+
+export interface InviteCode {
+  code: string;
+  keterangan: string;
+  createdAt: string;
+  isUsed: boolean;
+  usedBy?: string;
+  usedAt?: string;
+}
+
+export interface InviteCodesResponse {
+  success: boolean;
+  codes?: InviteCode[];
+  error?: string;
+}
+
+export interface CreateInviteCodeResponse {
+  success: boolean;
+  code?: string;
+  error?: string;
+}
+
+export async function getInviteCodes(): Promise<InviteCodesResponse> {
+  const url = `${API_URL}?action=listInviteCodes`;
+  const res = await fetch(url, { redirect: 'follow' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  if (text.trimStart().startsWith('<')) throw new Error('Apps Script error — bukan JSON');
+  return JSON.parse(text);
+}
+
+export async function createInviteCode(keterangan: string): Promise<CreateInviteCodeResponse> {
+  return authPost({ action: 'createInviteCode', keterangan });
+}
+
+export async function deleteInviteCode(code: string): Promise<ResetPasswordResponse> {
+  return authPost({ action: 'deleteInviteCode', code });
+}
+
+export interface UserRecord {
+  nomorHp: string;
+  nama: string;
+  createdAt: string;
+  status: 'active' | 'inactive';
+  role: 'admin' | 'user';
+}
+
+export interface GetUsersResponse {
+  success: boolean;
+  users?: UserRecord[];
+  error?: string;
+}
+
+export async function getUsers(): Promise<GetUsersResponse> {
+  const url = `${API_URL}?action=users`;
+  const res = await fetch(url, { redirect: 'follow' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  if (text.trimStart().startsWith('<')) throw new Error('Apps Script error — bukan JSON');
+  return JSON.parse(text);
+}
+
+export async function setUserRole(nomorHp: string, role: 'admin' | 'user'): Promise<ResetPasswordResponse> {
+  return authPost({ action: 'setUserRole', nomorHp, role });
+}
+
+export async function toggleUserStatus(nomorHp: string): Promise<ResetPasswordResponse & { status?: string }> {
+  return authPost({ action: 'toggleUserStatus', nomorHp });
 }

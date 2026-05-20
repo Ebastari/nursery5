@@ -1,10 +1,34 @@
 import { create } from 'zustand';
 import type { PlantStock, ActivityRecord, Shipment, Document, Alert, Notification, ApprovalRecord } from '../data/types';
 
-import { fetchApiData, clearCache } from '../data/api';
+import {
+  fetchApiData, clearCache, approveDocument,
+  loginUser as apiLogin, registerUser as apiRegister,
+} from '../data/api';
+import type { AuthUser, ApiRow } from '../data/api';
 import { getLastUpdated } from '../data/indexedDb';
 import { derivePlants, deriveActivities, deriveShipments, deriveAlerts, api as mockApi } from '../data/mockData';
-import type { ApiRow } from '../data/api';
+
+const AUTH_KEY = 'sn_auth';
+const SESSION_EXPIRE_DAYS = 30;
+
+function loadAuthFromStorage(): { user: AuthUser; token: string; loginAt: string } | null {
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data.loginAt) {
+      const diffMs = Date.now() - new Date(data.loginAt).getTime();
+      if (diffMs > SESSION_EXPIRE_DAYS * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(AUTH_KEY);
+        return null;
+      }
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
 
 function deriveNotifications(rows: ApiRow[]): Notification[] {
   return rows
@@ -28,8 +52,6 @@ function deriveNotifications(rows: ApiRow[]): Notification[] {
     });
 }
 
-import { approveDocument } from '../data/api';
-
 interface AppState {
   // Data
   plants: PlantStock[];
@@ -39,6 +61,15 @@ interface AppState {
   alerts: Alert[];
   notifications: Notification[];
   approvals: ApprovalRecord[];
+
+  // Auth
+  authUser: AuthUser | null;
+  authToken: string | null;
+  isLoggedIn: boolean;
+  loginUser: (nomorHp: string, password: string) => Promise<boolean>;
+  registerUser: (nomorHp: string, nama: string, password: string, inviteCode: string) => Promise<boolean>;
+  logout: () => void;
+  loadAuth: () => void;
 
   // Admin mode
   isAdmin: boolean;
@@ -83,6 +114,8 @@ interface AppState {
   setApprovalError: (error: string | null) => void;
 }
 
+const _storedAuth = loadAuthFromStorage();
+
 export const useStore = create<AppState>((set, get) => ({
   plants: [],
   activities: [],
@@ -92,7 +125,45 @@ export const useStore = create<AppState>((set, get) => ({
   notifications: [],
   approvals: [],
 
-  isAdmin: false,
+  // Auth
+  authUser: _storedAuth?.user ?? null,
+  authToken: _storedAuth?.token ?? null,
+  isLoggedIn: !!_storedAuth,
+
+  loadAuth: () => {
+    const stored = loadAuthFromStorage();
+    set({
+      authUser: stored?.user ?? null,
+      authToken: stored?.token ?? null,
+      isLoggedIn: !!stored,
+      isAdmin: stored?.user?.role === 'admin',
+    });
+  },
+
+  loginUser: async (nomorHp, password) => {
+    const res = await apiLogin(nomorHp, password);
+    if (!res.success || !res.user || !res.token) return false;
+    const loginAt = new Date().toISOString();
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ user: res.user, token: res.token, loginAt }));
+    set({ authUser: res.user, authToken: res.token, isLoggedIn: true, isAdmin: res.user.role === 'admin' });
+    return true;
+  },
+
+  registerUser: async (nomorHp, nama, password, inviteCode) => {
+    const res = await apiRegister(nomorHp, nama, password, inviteCode);
+    if (!res.success || !res.user || !res.token) throw new Error(res.error || 'Pendaftaran gagal');
+    const loginAt = new Date().toISOString();
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ user: res.user, token: res.token, loginAt }));
+    set({ authUser: res.user, authToken: res.token, isLoggedIn: true, isAdmin: res.user.role === 'admin' });
+    return true;
+  },
+
+  logout: () => {
+    localStorage.removeItem(AUTH_KEY);
+    set({ authUser: null, authToken: null, isLoggedIn: false, isAdmin: false });
+  },
+
+  isAdmin: _storedAuth?.user?.role === 'admin',
   adminPassword: 'admin123',
 
   inputForm: {

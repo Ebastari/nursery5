@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useId, useRef } from 'react';
-import { Loader2, CheckCircle2, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, ExternalLink, RefreshCw, AlertCircle, Download } from 'lucide-react';
 import { loadOptions } from '../components/chatbot/chatbotLogic';
 import type { DropdownData } from '../components/chatbot/chatbotLogic';
 import { api } from '../data/mockData';
 import { invalidateCache } from '../data/api';
+import { useStore } from '../store/useStore';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,8 @@ interface FormState {
 interface SuccessData {
   nomorSurat: string;
   linkPdf: string;
+  formState?: FormState;
+  sisaStok?: number;
 }
 
 const today = new Date().toISOString().split('T')[0];
@@ -179,7 +182,36 @@ function BibitSelect({
 
 // ── Success screen ─────────────────────────────────────────────────────────────
 
+function toDownloadUrl(url: string): string {
+  // Convert Google Drive share URL to direct download URL so users get the same backend PDF.
+  const m = url.match(/\/file\/d\/([^/]+)/);
+  if (m?.[1]) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  return url;
+}
+
 function SuccessScreen({ data, onReset }: { data: SuccessData; onReset: () => void }) {
+  const [generating, setGenerating] = useState(false);
+  const isKeluar = data.formState?.action === 'keluar';
+
+  const handleDownloadPdf = async () => {
+    if (!data.linkPdf) return;
+    setGenerating(true);
+    try {
+      const a = document.createElement('a');
+      a.href = toDownloadUrl(data.linkPdf);
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('PDF error:', err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center text-center gap-5 pt-8 pb-4">
       <div className="w-20 h-20 rounded-3xl bg-emerald-100 flex items-center justify-center">
@@ -188,9 +220,7 @@ function SuccessScreen({ data, onReset }: { data: SuccessData; onReset: () => vo
 
       <div>
         <h2 className="text-xl font-bold text-gray-900 mb-1">Data Berhasil Disimpan!</h2>
-        <p className="text-sm text-gray-500">
-          Notifikasi WhatsApp telah dikirim ke admin.
-        </p>
+        <p className="text-sm text-gray-500">Notifikasi WhatsApp telah dikirim ke admin.</p>
       </div>
 
       {data.nomorSurat && (
@@ -200,21 +230,32 @@ function SuccessScreen({ data, onReset }: { data: SuccessData; onReset: () => vo
         </div>
       )}
 
+      {isKeluar && data.linkPdf && (
+        <button
+          onClick={handleDownloadPdf}
+          disabled={generating}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-600 text-white font-semibold text-sm shadow-sm hover:bg-emerald-700 disabled:opacity-60 transition"
+        >
+          {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          {generating ? 'Menyiapkan PDF...' : 'Download Surat Jalan PDF'}
+        </button>
+      )}
+
       {data.linkPdf && (
         <a
           href={data.linkPdf}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-blue-600 text-white font-semibold text-sm shadow-sm hover:bg-blue-700 transition"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 font-semibold text-sm hover:bg-blue-100 transition"
         >
           <ExternalLink className="w-4 h-4" />
-          Lihat Surat Jalan PDF
+          Lihat di Spreadsheet
         </a>
       )}
 
       <button
         onClick={onReset}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-600 text-white font-semibold text-sm shadow-sm hover:bg-emerald-700 transition"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gray-100 text-gray-700 font-semibold text-sm hover:bg-gray-200 transition"
       >
         <RefreshCw className="w-4 h-4" />
         Input Data Baru
@@ -241,14 +282,15 @@ function FieldSkeleton() {
 // ── Action tab button ─────────────────────────────────────────────────────────
 
 const ACTION_CONFIG = {
-  masuk: { label: '📥 Masuk', active: 'bg-emerald-600 border-emerald-600 text-white' },
-  keluar: { label: '📤 Keluar', active: 'bg-blue-600 border-blue-600 text-white' },
-  mati: { label: '💀 Mati', active: 'bg-red-500 border-red-500 text-white' },
+  masuk: { label: ' Masuk', active: 'bg-emerald-600 border-emerald-600 text-white' },
+  keluar: { label: ' Keluar', active: 'bg-blue-600 border-blue-600 text-white' },
+  mati: { label: 'Mati', active: 'bg-red-500 border-red-500 text-white' },
 } as const;
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function InputFormScreen() {
+  const { authUser } = useStore();
   const [options, setOptions] = useState<DropdownData>({
     bibit: [],
     sumber: [],
@@ -258,7 +300,10 @@ export function InputFormScreen() {
   });
   const [stokMap, setStokMap] = useState<Record<string, number>>({});
   const [loadingOptions, setLoadingOptions] = useState(true);
-  const [form, setForm] = useState<FormState>(emptyForm());
+  const [form, setForm] = useState<FormState>(() => ({
+    ...emptyForm(),
+    dibuatOleh: authUser?.nama ?? '',
+  }));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<SuccessData | null>(null);
@@ -314,9 +359,14 @@ export function InputFormScreen() {
         driver: form.driver.trim(),
       });
       invalidateCache();
+      const bibitKey = form.bibit.trim().toUpperCase();
+      const stokSebelum = stokMap[bibitKey] ?? 0;
+      const sisaStok = Math.max(0, stokSebelum - (form.action === 'keluar' ? Number(form.jumlah) : 0));
       setSuccess({
         nomorSurat: (result as unknown as Record<string, string>).nomorSurat ?? '',
         linkPdf: result.linkPdf ?? '',
+        formState: form,
+        sisaStok,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan. Silakan coba lagi.');
@@ -327,7 +377,7 @@ export function InputFormScreen() {
 
   const handleReset = () => {
     setSuccess(null);
-    setForm(emptyForm());
+    setForm({ ...emptyForm(), dibuatOleh: authUser?.nama ?? '' });
     fetchOptions();
   };
 

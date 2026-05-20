@@ -11,7 +11,8 @@ const SHEET_NAME         = "Bibit";
 const MASTER_SHEET_NAME  = "Master";
 const FOLDER_SURAT_JALAN = "Surat Jalan Bibit";
 const NOMOR_ADMIN        = "6281122220044";
-const TOKEN_FONNTE       = "VDFAKtD3JhwNymAf6Sgz";
+const WA_PHONE_ID        = "1031573276716425";   // Phone Number ID dari Meta
+const WA_TOKEN_DEFAULT   = "";                   // Kosongkan — simpan via Script Properties
 
 // Konfigurasi Approver (ubah di Script Properties jika perlu)
 const DEFAULT_APPROVER_NAME     = "Mariano Alvarado Simamora";
@@ -21,7 +22,39 @@ const DEFAULT_APPROVER_JABATAN  = "Dept Head Revegetasi & Rehabilitasi";
 const LOGO_URL = "https://i.ibb.co.com/xSTT9wJK/download.png";
 
 function getToken() {
-  return PropertiesService.getScriptProperties().getProperty("TOKEN_FONNTE") || TOKEN_FONNTE;
+  return PropertiesService.getScriptProperties().getProperty("WA_TOKEN") || WA_TOKEN_DEFAULT;
+}
+
+function getPhoneId() {
+  return PropertiesService.getScriptProperties().getProperty("WA_PHONE_ID") || WA_PHONE_ID;
+}
+
+/**
+ * Kirim pesan teks bebas via Meta WhatsApp Business API.
+ * Hanya berlaku dalam jendela 24 jam setelah user menghubungi bisnis Anda.
+ */
+function sendMetaWA(target, message) {
+  const token   = getToken();
+  const phoneId = getPhoneId();
+  if (!token)   throw new Error("WA_TOKEN belum diset di Script Properties.");
+  if (!phoneId) throw new Error("WA_PHONE_ID belum diset.");
+
+  const url = "https://graph.facebook.com/v25.0/" + phoneId + "/messages";
+  const res = UrlFetchApp.fetch(url, {
+    method: "post",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    payload: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: target.replace(/^\+/, ""),
+      type: "text",
+      text: { body: message },
+    }),
+    muteHttpExceptions: true,
+  });
+  return { code: res.getResponseCode(), body: res.getContentText() };
 }
 
 function getApproverName() {
@@ -564,6 +597,10 @@ const COLS_NEEDED = [
   { name: "Kode Verifikasi", mapKey: "kodeverifikasi" },
   { name: "Link PDF",        mapKey: "linkpdf"        },
   { name: "Status Kirim",    mapKey: "statuskirim"    },
+  { name: "Status Terima",   mapKey: "statusterima"   },
+  { name: "Nama Penerima",   mapKey: "namapenerima"   },
+  { name: "Tanggal Terima",  mapKey: "tanggalterima"  },
+  { name: "Jumlah Diterima", mapKey: "jumlahditerima" },
 ];
 
 function saveToSheet(data) {
@@ -646,6 +683,43 @@ function approveSurat(body) {
 
 
 // ============================================================
+//  KONFIRMASI PENERIMAAN BIBIT (dipanggil dari doPost)
+// ============================================================
+
+function confirmDelivery(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) throw new Error("Sheet tidak ditemukan");
+
+  const headerMap = ensureColumns(sheet, [
+    { name: "Status Terima",   mapKey: "statusterima"   },
+    { name: "Nama Penerima",   mapKey: "namapenerima"   },
+    { name: "Tanggal Terima",  mapKey: "tanggalterima"  },
+    { name: "Jumlah Diterima", mapKey: "jumlahditerima" },
+  ]);
+
+  const kodeCol = headerMap.kodeverifikasi;
+  if (kodeCol === undefined) return { success: false, error: "Kolom Kode Verifikasi tidak ditemukan" };
+
+  const allData = sheet.getDataRange().getValues();
+  for (let i = 1; i < allData.length; i++) {
+    const kode = (allData[i][kodeCol] || "").toString().trim();
+    if (kode !== body.kodeVerifikasi) continue;
+
+    const row = i + 1;
+    const tanggalTerima = Utilities.formatDate(new Date(), "Asia/Makassar", "yyyy-MM-dd HH:mm");
+
+    if (headerMap.statusterima   !== undefined) sheet.getRange(row, headerMap.statusterima   + 1).setValue("diterima");
+    if (headerMap.namapenerima   !== undefined) sheet.getRange(row, headerMap.namapenerima   + 1).setValue(body.namaPenerima   || "");
+    if (headerMap.tanggalterima  !== undefined) sheet.getRange(row, headerMap.tanggalterima  + 1).setValue(tanggalTerima);
+    if (headerMap.jumlahditerima !== undefined) sheet.getRange(row, headerMap.jumlahditerima + 1).setValue(Number(body.jumlahDiterima) || 0);
+
+    return { success: true, message: "Konfirmasi penerimaan berhasil", tanggalTerima };
+  }
+  return { success: false, error: "Kode verifikasi tidak ditemukan" };
+}
+
+
+// ============================================================
 //  KIRIM WHATSAPP — Pesan singkat (dipanggil dari doPost)
 // ============================================================
 
@@ -662,13 +736,7 @@ function sendWhatsApp(data, nomorSurat, linkPdf) {
     (linkPdf ? "📄 PDF: " + linkPdf + "\n" : "");
 
   try {
-    const res = UrlFetchApp.fetch("https://api.fonnte.com/send", {
-      method: "post",
-      headers: { Authorization: token },
-      payload: { target: NOMOR_ADMIN, message },
-      muteHttpExceptions: true,
-    });
-    return { code: res.getResponseCode(), body: res.getContentText() };
+    return sendMetaWA(NOMOR_ADMIN, message);
   } catch (err) {
     Logger.log("[sendWhatsApp] Error: " + err);
     return { code: 0, error: err.toString() };
@@ -682,7 +750,7 @@ function sendWhatsApp(data, nomorSurat, linkPdf) {
 
 function kirimPesanFonnte(sheet, row, headerMap, allData, rowValues) {
   const token = getToken();
-  if (!token) { Logger.log("[kirimPesanFonnte] TOKEN_FONNTE belum diset."); return; }
+  if (!token) { Logger.log("[kirimPesanFonnte] WA_TOKEN belum diset di Script Properties."); return; }
 
   const statusCol = headerMap.statuskirim !== undefined
     ? headerMap.statuskirim + 1
@@ -930,14 +998,14 @@ function kirimPesanFonnte(sheet, row, headerMap, allData, rowValues) {
       (sr >= 97 && rp >= 90 ? "✅ Sangat Baik" : sr >= 90 && rp >= 80 ? "⚙ Stabil" : "⚠ Perlu Evaluasi") + "\n" +
     "----------------------------------\n" +
     "🧠 Kesimpulan:\n" + kesimpulan + "\n" +
-    "> Dikirim otomatis via Fonnte\n" +
+    "> Dikirim otomatis via WhatsApp Business API\n" +
     "> Montana AI Engine 🌱";
 
   // Tambahkan link PDF — utamakan Autocrat jika ada
   const linkToSend = linkMerged || "";
   if (linkToSend) {
     const labelSurat = nomorSurat ? "*Surat Jalan " + nomorSurat + ":*" : "*Surat Jalan (PDF):*";
-    pesan += "\n📄 " + labelSurat + "\n" + linkToSend + "\n> _Sent via fonnte.com_";
+    pesan += "\n📄 " + labelSurat + "\n" + linkToSend;
   }
 
   // Kirim ke semua target
@@ -945,15 +1013,9 @@ function kirimPesanFonnte(sheet, row, headerMap, allData, rowValues) {
   let allOk = true;
   for (const target of targets) {
     try {
-      const res = UrlFetchApp.fetch("https://api.fonnte.com/send", {
-        method: "post",
-        headers: { Authorization: token },
-        payload: { target: target.trim(), message: pesan },
-        muteHttpExceptions: true,
-      });
-      const resCode = res.getResponseCode();
-      Logger.log("Fonnte [" + target.trim() + "]: " + resCode + " - " + res.getContentText());
-      if (resCode !== 200) allOk = false;
+      const result  = sendMetaWA(target.trim(), pesan);
+      Logger.log("MetaWA [" + target.trim() + "]: " + result.code + " - " + result.body);
+      if (result.code !== 200) allOk = false;
     } catch (err) {
       Logger.log("[kirimPesanFonnte] Gagal kirim ke " + target + ": " + err);
       allOk = false;
@@ -1003,7 +1065,7 @@ function inputDataBibit(data) {
     headerMap = buildHeaderMap(sheet);
     kirimPesanFonnte(sheet, newRow, headerMap, allData, allData[newRow - 1]);
   } catch (err) {
-    Logger.log("[inputDataBibit] Fonnte gagal: " + err.message);
+    Logger.log("[inputDataBibit] MetaWA gagal: " + err.message);
   }
 
   return { success: true, nomorSurat, linkPdf: pdfUrl };
@@ -1031,6 +1093,122 @@ function doPost(e) {
     // Fallback ke form parameters
     body = (e && e.parameter) ? e.parameter : {};
     Logger.log("[doPost] Fallback to e.parameter: " + JSON.stringify(body));
+  }
+
+  // ── Handler Auth: requestOtp ──
+  if (body.action === "requestOtp") {
+    try {
+      return ContentService.createTextOutput(JSON.stringify(doRequestOtp(body.nomorHp || "")))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ── Handler Auth: register ──
+  if (body.action === "register") {
+    try {
+      return ContentService.createTextOutput(
+        JSON.stringify(doRegister(body.nomorHp || "", body.nama || "", body.password || "", body.inviteCode || ""))
+      ).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ── Handler Invite Codes ──
+  if (body.action === "createInviteCode") {
+    try {
+      return ContentService.createTextOutput(JSON.stringify(doCreateInviteCode(body.keterangan || "")))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  if (body.action === "deleteInviteCode") {
+    try {
+      return ContentService.createTextOutput(JSON.stringify(doDeleteInviteCode(body.code || "")))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ── Handler Auth: login ──
+  if (body.action === "login") {
+    try {
+      return ContentService.createTextOutput(
+        JSON.stringify(doLogin(body.nomorHp || "", body.password || ""))
+      ).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ── Handler Auth: changePassword ──
+  if (body.action === "changePassword") {
+    try {
+      return ContentService.createTextOutput(
+        JSON.stringify(doChangePassword(body.nomorHp || "", body.oldPassword || "", body.newPassword || ""))
+      ).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ── Handler Admin: setUserRole ──
+  if (body.action === "setUserRole") {
+    try {
+      return ContentService.createTextOutput(
+        JSON.stringify(doSetUserRole(body.nomorHp || "", body.role || "user"))
+      ).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ── Handler Admin: toggleUserStatus ──
+  if (body.action === "toggleUserStatus") {
+    try {
+      return ContentService.createTextOutput(
+        JSON.stringify(doToggleUserStatus(body.nomorHp || ""))
+      ).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ── Handler Auth: resetPassword ──
+  if (body.action === "resetPassword") {
+    try {
+      return ContentService.createTextOutput(
+        JSON.stringify(doResetPassword(body.nomorHp || "", body.otp || "", body.newPassword || ""))
+      ).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ── Handler Konfirmasi Penerimaan ──
+  if (body.action === "confirmDelivery" && body.kodeVerifikasi) {
+    try {
+      return ContentService.createTextOutput(JSON.stringify(confirmDelivery(body)))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false, message: "Konfirmasi penerimaan gagal", error: err.toString()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
   }
 
   // ── Handler Approval ──
@@ -1098,12 +1276,12 @@ function doPost(e) {
   }
 
   // ── Kirim WhatsApp singkat ──
-  let fonnteResp = {};
+  let waResp = {};
   try {
-    fonnteResp = sendWhatsApp(body, nomorSurat, linkPdf);
-    Logger.log("[doPost] Fonnte: " + JSON.stringify(fonnteResp));
+    waResp = sendWhatsApp(body, nomorSurat, linkPdf);
+    Logger.log("[doPost] MetaWA: " + JSON.stringify(waResp));
   } catch (err) {
-    Logger.log("[doPost] Fonnte error: " + err);
+    Logger.log("[doPost] MetaWA error: " + err);
   }
 
   return ContentService.createTextOutput(JSON.stringify({
@@ -1113,7 +1291,7 @@ function doPost(e) {
     nomorSurat,
     linkPdf,
     row:        newRow,
-    fonnte:     fonnteResp,
+    whatsapp:   waResp,
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -1139,6 +1317,18 @@ function doGet(e) {
   // --- Dropdowns (bibit, sumber, tujuan, dibuatOleh, driver) ---
   if (action === "dropdowns") {
     return ContentService.createTextOutput(JSON.stringify(getDropdownOptions()))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // --- Daftar Users (admin only) ---
+  if (action === "users") {
+    return ContentService.createTextOutput(JSON.stringify(doGetUsers()))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // --- Daftar Kode Undangan (admin only) ---
+  if (action === "listInviteCodes") {
+    return ContentService.createTextOutput(JSON.stringify(doListInviteCodes()))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -1190,6 +1380,10 @@ function doGet(e) {
       linkPdf:        linkMerged || safeGet(r, headerMap.linkpdf, "").toString().trim(),
       dibuatOleh:     safeGet(r, headerMap.dibuatoleh,     "").toString().trim(),
       driver:         safeGet(r, headerMap.driver,         "").toString().trim(),
+      statusTerima:   safeGet(r, headerMap.statusterima,   "").toString().trim(),
+      namaPenerima:   safeGet(r, headerMap.namapenerima,   "").toString().trim(),
+      tanggalTerima:  safeGet(r, headerMap.tanggalterima,  "").toString().trim(),
+      jumlahDiterima: safeNum(r, headerMap.jumlahditerima, 0),
     });
   }
 
@@ -1358,4 +1552,565 @@ function testKirimManual() {
   if (allData.length < 2) { SpreadsheetApp.getUi().alert("Tidak ada data di baris 2."); return; }
   SpreadsheetApp.getUi().alert("Mencoba mengirim data dari baris 2...");
   kirimPesanFonnte(sheet, 2, headerMap, allData, allData[1]);
+}
+
+
+// ============================================================
+//  AUTH — Users & OTP
+// ============================================================
+
+const USERS_SHEET  = "Users";
+const OTP_SHEET    = "OTP";
+const OTP_EXPIRE_MS = 5 * 60 * 1000; // 5 menit
+const MAX_OTP_PER_10MIN = 3;
+
+/**
+ * Hash password dengan SHA-256, kembalikan hex string.
+ */
+function hashPassword(password) {
+  const raw = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    password,
+    Utilities.Charset.UTF_8
+  );
+  return raw.map(function(b) {
+    return ("0" + (b & 0xFF).toString(16)).slice(-2);
+  }).join("");
+}
+
+/**
+ * Generate token random 32 karakter hex.
+ */
+function generateToken() {
+  const raw = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    Math.random().toString() + Date.now().toString(),
+    Utilities.Charset.UTF_8
+  );
+  return raw.map(function(b) {
+    return ("0" + (b & 0xFF).toString(16)).slice(-2);
+  }).join("").slice(0, 32);
+}
+
+/**
+ * Generate OTP 4 digit angka.
+ */
+function generateOtp4() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+/**
+ * Normalisasi nomor HP ke format internasional (62xxx).
+ * "08123456789" → "628123456789"
+ */
+function normalizePhone(hp) {
+  hp = hp.toString().trim().replace(/\D/g, "");
+  if (hp.startsWith("0"))  hp = "62" + hp.slice(1);
+  if (hp.startsWith("+62")) hp = hp.slice(1);
+  return hp;
+}
+
+/**
+ * Inisialisasi sheet Users jika belum ada.
+ * Kolom: NomorHp | Nama | Password | CreatedAt | Status | Role
+ * Role: "admin" (user pertama) atau "user"
+ */
+function initUsersSheet() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(USERS_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(USERS_SHEET);
+    sheet.getRange(1, 1, 1, 6).setValues([["NomorHp", "Nama", "Password", "CreatedAt", "Status", "Role"]]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+  // Migrasi: tambah kolom Role jika sheet lama belum punya
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var hasRole = headers.some(function(h) { return h.toString().toLowerCase() === "role"; });
+  if (!hasRole) {
+    var roleCol = sheet.getLastColumn() + 1;
+    sheet.getRange(1, roleCol).setValue("Role");
+    // Isi default "user" untuk semua row lama, baris pertama data jadi "admin"
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.getRange(2, roleCol).setValue("admin");
+      if (lastRow > 2) {
+        sheet.getRange(3, roleCol, lastRow - 2, 1).setValue("user");
+      }
+    }
+  }
+  return sheet;
+}
+
+/**
+ * Inisialisasi sheet OTP jika belum ada.
+ * Kolom: NomorHp | Kode | CreatedAt | ExpiredAt | Used
+ */
+function initOtpSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(OTP_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(OTP_SHEET);
+    sheet.getRange(1, 1, 1, 5).setValues([["NomorHp", "Kode", "CreatedAt", "ExpiredAt", "Used"]]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+/**
+ * Cek apakah nomor HP sudah terdaftar.
+ */
+function isUserExists(nomorHp) {
+  const sheet = initUsersSheet();
+  const data  = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0].toString().trim() === nomorHp.trim()) return true;
+  }
+  return false;
+}
+
+/**
+ * Handler: kirim OTP ke nomor HP via Meta WhatsApp Business API.
+ * Rate limit: maks 3 OTP per nomor per 10 menit.
+ */
+function doRequestOtp(nomorHp) {
+  nomorHp = nomorHp.trim();
+  if (!nomorHp) return { success: false, error: "Nomor HP wajib diisi" };
+
+  const otpSheet = initOtpSheet();
+  const now      = new Date();
+  const data     = otpSheet.getDataRange().getValues();
+  const tenMinAgo = new Date(now.getTime() - 10 * 60 * 1000);
+
+  // Rate limiting
+  var recentCount = 0;
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0].toString().trim() !== nomorHp) continue;
+    var created = new Date(data[i][2]);
+    if (created >= tenMinAgo) recentCount++;
+  }
+  if (recentCount >= MAX_OTP_PER_10MIN) {
+    return { success: false, error: "Terlalu banyak permintaan OTP. Coba lagi dalam beberapa menit." };
+  }
+
+  // Generate OTP
+  var kode      = generateOtp4();
+  var expiredAt = new Date(now.getTime() + OTP_EXPIRE_MS);
+  otpSheet.appendRow([nomorHp, kode, now.toISOString(), expiredAt.toISOString(), false]);
+
+  // Kirim via Meta WhatsApp Business API
+  var target  = normalizePhone(nomorHp);
+  var message = "🌱 *Smart Nursery — Verifikasi*\n\nKode OTP Anda:\n\n*" + kode + "*\n\nBerlaku 5 menit. Jangan bagikan kode ini ke siapapun.\n\n_PT Energi Batubara Lestari_";
+
+  try {
+    var result  = sendMetaWA(target, message);
+    Logger.log("[doRequestOtp] MetaWA HTTP " + result.code + ": " + result.body);
+
+    if (result.code !== 200) {
+      var errBody = JSON.parse(result.body);
+      var errMsg  = (errBody.error && errBody.error.message) ? errBody.error.message : result.body;
+      return { success: false, error: "Meta WA gagal kirim: " + errMsg };
+    }
+  } catch (err) {
+    Logger.log("[doRequestOtp] MetaWA error: " + err);
+    return { success: false, error: "Gagal mengirim OTP via WhatsApp: " + err.toString() };
+  }
+
+  return { success: true, message: "Kode OTP telah dikirim via WhatsApp ke " + target };
+}
+
+/**
+ * Verifikasi OTP — cek kode dan expired.
+ * Kembalikan true/false.
+ */
+function verifyOtp(nomorHp, kode) {
+  nomorHp = nomorHp.trim();
+  kode    = kode.toString().trim();
+  var otpSheet = initOtpSheet();
+  var data     = otpSheet.getDataRange().getValues();
+  var now      = new Date();
+
+  // Cari OTP terbaru yang cocok (dari bawah ke atas)
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (data[i][0].toString().trim() !== nomorHp) continue;
+    if (data[i][1].toString().trim() !== kode)    continue;
+    if (data[i][4] === true || data[i][4] === "TRUE") continue; // sudah dipakai
+    var expiredAt = new Date(data[i][3]);
+    if (now > expiredAt) return { valid: false, error: "Kode OTP sudah kedaluwarsa" };
+    // Tandai sebagai dipakai
+    otpSheet.getRange(i + 1, 5).setValue(true);
+    return { valid: true };
+  }
+  return { valid: false, error: "Kode OTP salah" };
+}
+
+/**
+ * Handler: daftarkan user baru dengan kode undangan.
+ * - Jika belum ada user sama sekali: kode undangan dilewati, otomatis jadi admin.
+ * - Selanjutnya: wajib kode undangan valid dari admin.
+ */
+function doRegister(nomorHp, nama, password, inviteCode) {
+  nomorHp = nomorHp.trim();
+  nama    = (nama || "").trim();
+  if (!nomorHp || !nama || !password) {
+    return { success: false, error: "Nama, nomor HP, dan password wajib diisi" };
+  }
+
+  if (isUserExists(nomorHp)) {
+    return { success: false, error: "Nomor HP sudah terdaftar" };
+  }
+
+  var usersSheet  = initUsersSheet();
+  var isFirstUser = usersSheet.getLastRow() <= 1; // belum ada user sama sekali
+  var role        = isFirstUser ? "admin" : "user";
+  var hashedPass  = hashPassword(password);
+  var token       = generateToken();
+  var createdAt   = new Date().toISOString();
+
+  if (!isFirstUser) {
+    // Pendaftaran ke-2 dst: wajib kode undangan
+    if (!inviteCode || !inviteCode.trim()) {
+      return { success: false, error: "Kode undangan wajib diisi" };
+    }
+    var inviteCheck = useInviteCode(inviteCode.trim(), nomorHp);
+    if (!inviteCheck.valid) return { success: false, error: inviteCheck.error };
+  }
+
+  usersSheet.appendRow([nomorHp, nama, hashedPass, createdAt, "active", role]);
+
+  return {
+    success: true,
+    token: token,
+    user: { nomorHp: nomorHp, nama: nama, role: role },
+    message: "Pendaftaran berhasil",
+  };
+}
+
+/**
+ * Handler: login user — kembalikan role untuk akses admin di frontend.
+ */
+function doLogin(nomorHp, password) {
+  nomorHp = nomorHp.trim();
+  if (!nomorHp || !password) {
+    return { success: false, error: "Nomor HP dan password wajib diisi" };
+  }
+
+  var usersSheet = initUsersSheet();
+  var data       = usersSheet.getDataRange().getValues();
+  var headers    = data[0]; // baris header
+  var roleColIdx = -1;
+  for (var h = 0; h < headers.length; h++) {
+    if (headers[h].toString().toLowerCase() === "role") { roleColIdx = h; break; }
+  }
+
+  var hashedPass = hashPassword(password);
+
+  for (var i = 1; i < data.length; i++) {
+    var rowHp   = data[i][0].toString().trim();
+    var rowPass = data[i][2].toString().trim();
+    var rowNama = data[i][1].toString().trim();
+    var status  = data[i][4].toString().trim();
+    var role    = roleColIdx >= 0 ? (data[i][roleColIdx] || "user").toString().trim() : "user";
+
+    if (rowHp !== nomorHp) continue;
+    if (status !== "active") return { success: false, error: "Akun tidak aktif, hubungi admin" };
+    if (rowPass !== hashedPass) return { success: false, error: "Nomor HP atau password salah" };
+
+    var token   = generateToken();
+    var waktuWita = Utilities.formatDate(new Date(), "Asia/Makassar", "dd MMM yyyy, HH.mm 'WITA'");
+    var pesanLogin =
+      "🔐 *Notifikasi Login — Smart Nursery*\n\n" +
+      "Halo, *" + rowNama + "*!\n\n" +
+      "Akun Anda baru saja masuk ke sistem.\n\n" +
+      "🕐 Waktu  : " + waktuWita + "\n" +
+      "📱 Nomor  : " + nomorHp + "\n" +
+      "👤 Role   : " + (role === "admin" ? "Administrator" : "User") + "\n\n" +
+      "Jika ini bukan Anda, segera hubungi admin.\n\n" +
+      "_PT Energi Batubara Lestari — Unit Nursery_";
+
+    try {
+      var targetWa = normalizePhone(nomorHp);
+      sendMetaWA(targetWa, pesanLogin);
+      Logger.log("[doLogin] Notifikasi login terkirim ke " + targetWa);
+    } catch (errWa) {
+      Logger.log("[doLogin] Gagal kirim notifikasi login: " + errWa);
+    }
+
+    return {
+      success: true,
+      token: token,
+      user: { nomorHp: nomorHp, nama: rowNama, role: role },
+      message: "Login berhasil",
+    };
+  }
+
+  return { success: false, error: "Nomor HP atau password salah" };
+}
+
+/**
+ * Handler: ganti password dari profil (verifikasi password lama).
+ */
+function doChangePassword(nomorHp, oldPassword, newPassword) {
+  nomorHp = nomorHp.trim();
+  if (!nomorHp || !oldPassword || !newPassword) {
+    return { success: false, error: "Semua field wajib diisi" };
+  }
+  if (newPassword.length < 6) {
+    return { success: false, error: "Password baru minimal 6 karakter" };
+  }
+
+  var usersSheet = initUsersSheet();
+  var data       = usersSheet.getDataRange().getValues();
+  var oldHashed  = hashPassword(oldPassword);
+  var newHashed  = hashPassword(newPassword);
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0].toString().trim() !== nomorHp) continue;
+    if (data[i][2].toString().trim() !== oldHashed) {
+      return { success: false, error: "Password lama salah" };
+    }
+    usersSheet.getRange(i + 1, 3).setValue(newHashed);
+    return { success: true, message: "Password berhasil diubah" };
+  }
+  return { success: false, error: "Akun tidak ditemukan" };
+}
+
+/**
+ * Ambil daftar semua user (hanya untuk admin).
+ */
+function doGetUsers() {
+  var usersSheet = initUsersSheet();
+  var data       = usersSheet.getDataRange().getValues();
+  var headers    = data[0];
+  var roleIdx    = -1;
+  for (var h = 0; h < headers.length; h++) {
+    if (headers[h].toString().toLowerCase() === "role") { roleIdx = h; break; }
+  }
+
+  var users = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[0]) continue;
+    users.push({
+      nomorHp:   row[0].toString().trim(),
+      nama:      row[1].toString().trim(),
+      createdAt: row[3] ? row[3].toString() : "",
+      status:    row[4].toString().trim(),
+      role:      roleIdx >= 0 ? (row[roleIdx] || "user").toString().trim() : "user",
+    });
+  }
+  return { success: true, users: users };
+}
+
+/**
+ * Set role user (admin/user). Hanya boleh dipanggil oleh admin.
+ */
+function doSetUserRole(nomorHp, role) {
+  nomorHp = nomorHp.trim();
+  role    = role === "admin" ? "admin" : "user";
+  if (!nomorHp) return { success: false, error: "Nomor HP wajib diisi" };
+
+  var usersSheet = initUsersSheet();
+  var data       = usersSheet.getDataRange().getValues();
+  var headers    = data[0];
+  var roleIdx    = -1;
+  for (var h = 0; h < headers.length; h++) {
+    if (headers[h].toString().toLowerCase() === "role") { roleIdx = h; break; }
+  }
+  if (roleIdx < 0) return { success: false, error: "Kolom Role tidak ditemukan" };
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0].toString().trim() !== nomorHp) continue;
+    usersSheet.getRange(i + 1, roleIdx + 1).setValue(role);
+    return { success: true, message: "Role berhasil diubah ke " + role };
+  }
+  return { success: false, error: "User tidak ditemukan" };
+}
+
+/**
+ * Toggle status aktif/nonaktif user.
+ */
+function doToggleUserStatus(nomorHp) {
+  nomorHp = nomorHp.trim();
+  if (!nomorHp) return { success: false, error: "Nomor HP wajib diisi" };
+
+  var usersSheet = initUsersSheet();
+  var data       = usersSheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0].toString().trim() !== nomorHp) continue;
+    var current = data[i][4].toString().trim();
+    var newStatus = current === "active" ? "inactive" : "active";
+    usersSheet.getRange(i + 1, 5).setValue(newStatus);
+    return { success: true, status: newStatus, message: "Status diubah ke " + newStatus };
+  }
+  return { success: false, error: "User tidak ditemukan" };
+}
+
+// ============================================================
+//  INVITE CODES — Kode Undangan Pendaftaran
+// ============================================================
+
+const INVITE_SHEET = "InviteCodes";
+
+/**
+ * Inisialisasi sheet InviteCodes jika belum ada.
+ * Kolom: code | keterangan | createdAt | isUsed | usedBy | usedAt
+ */
+function initInviteCodesSheet() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(INVITE_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(INVITE_SHEET);
+    sheet.getRange(1, 1, 1, 6).setValues([["code", "keterangan", "createdAt", "isUsed", "usedBy", "usedAt"]]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+/**
+ * Generate kode undangan unik format NRS-XXXXXX
+ * (tanpa 0/O, 1/I/L agar tidak membingungkan saat dibaca)
+ */
+function generateInviteCode_() {
+  var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  var code  = "NRS-";
+  for (var i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+/**
+ * Validasi dan tandai kode undangan sebagai terpakai.
+ * Dipanggil dari doRegister.
+ */
+function useInviteCode(code, usedByHp) {
+  var sheet   = initInviteCodesSheet();
+  var data    = sheet.getDataRange().getValues();
+  var headers = data[0].map(function(h) { return h.toString().trim().toLowerCase(); });
+  var codeIdx    = headers.indexOf("code");
+  var isUsedIdx  = headers.indexOf("isused");
+  var usedByIdx  = headers.indexOf("usedby");
+  var usedAtIdx  = headers.indexOf("usedat");
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][codeIdx].toString().trim() !== code) continue;
+    var isUsed = data[i][isUsedIdx];
+    if (isUsed === true || isUsed === "TRUE" || isUsed === "true") {
+      return { valid: false, error: "Kode undangan sudah digunakan" };
+    }
+    // Tandai sebagai terpakai
+    sheet.getRange(i + 1, isUsedIdx  + 1).setValue(true);
+    sheet.getRange(i + 1, usedByIdx  + 1).setValue(usedByHp);
+    sheet.getRange(i + 1, usedAtIdx  + 1).setValue(new Date().toISOString());
+    return { valid: true };
+  }
+  return { valid: false, error: "Kode undangan tidak valid" };
+}
+
+/**
+ * Ambil semua kode undangan.
+ */
+function doListInviteCodes() {
+  var sheet   = initInviteCodesSheet();
+  var data    = sheet.getDataRange().getValues();
+  if (data.length <= 1) return { success: true, codes: [] };
+
+  var headers = data[0].map(function(h) { return h.toString().trim().toLowerCase(); });
+  var codes   = [];
+  for (var i = 1; i < data.length; i++) {
+    var row    = data[i];
+    var isUsed = row[headers.indexOf("isused")];
+    codes.push({
+      code:        row[headers.indexOf("code")].toString().trim(),
+      keterangan:  row[headers.indexOf("keterangan")].toString().trim(),
+      createdAt:   row[headers.indexOf("createdat")].toString().trim(),
+      isUsed:      isUsed === true || isUsed === "TRUE" || isUsed === "true",
+      usedBy:      row[headers.indexOf("usedby")].toString().trim(),
+      usedAt:      row[headers.indexOf("usedat")].toString().trim(),
+    });
+  }
+  // Urutkan: belum terpakai dulu, terbaru di atas
+  codes.sort(function(a, b) {
+    if (a.isUsed !== b.isUsed) return a.isUsed ? 1 : -1;
+    return b.createdAt > a.createdAt ? 1 : -1;
+  });
+  return { success: true, codes: codes };
+}
+
+/**
+ * Buat kode undangan baru.
+ */
+function doCreateInviteCode(keterangan) {
+  var sheet   = initInviteCodesSheet();
+  var data    = sheet.getDataRange().getValues();
+
+  // Kumpulkan kode yang sudah ada untuk cek duplikat
+  var existing = [];
+  for (var i = 1; i < data.length; i++) {
+    existing.push(data[i][0].toString().trim());
+  }
+
+  // Generate kode unik
+  var code, attempts = 0;
+  do {
+    code = generateInviteCode_();
+    attempts++;
+  } while (existing.indexOf(code) >= 0 && attempts < 10);
+
+  sheet.appendRow([code, keterangan || "", new Date().toISOString(), false, "", ""]);
+  return { success: true, code: code };
+}
+
+/**
+ * Hapus kode undangan (hanya yang belum terpakai).
+ */
+function doDeleteInviteCode(code) {
+  if (!code) return { success: false, error: "Kode tidak boleh kosong" };
+
+  var sheet   = initInviteCodesSheet();
+  var data    = sheet.getDataRange().getValues();
+  var headers = data[0].map(function(h) { return h.toString().trim().toLowerCase(); });
+  var codeIdx   = headers.indexOf("code");
+  var isUsedIdx = headers.indexOf("isused");
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][codeIdx].toString().trim() !== code) continue;
+    var isUsed = data[i][isUsedIdx];
+    if (isUsed === true || isUsed === "TRUE" || isUsed === "true") {
+      return { success: false, error: "Kode yang sudah digunakan tidak dapat dihapus" };
+    }
+    sheet.deleteRow(i + 1);
+    return { success: true, message: "Kode dihapus" };
+  }
+  return { success: false, error: "Kode tidak ditemukan" };
+}
+
+/**
+ * Handler: reset password via OTP.
+ * Alur: requestOtp → verifyOtp → doResetPassword
+ */
+function doResetPassword(nomorHp, otp, newPassword) {
+  nomorHp = nomorHp.trim();
+  if (!nomorHp || !otp || !newPassword) {
+    return { success: false, error: "Semua field wajib diisi" };
+  }
+  if (!isUserExists(nomorHp)) {
+    return { success: false, error: "Nomor HP tidak terdaftar" };
+  }
+
+  var otpCheck = verifyOtp(nomorHp, otp);
+  if (!otpCheck.valid) return { success: false, error: otpCheck.error };
+
+  var usersSheet = initUsersSheet();
+  var data       = usersSheet.getDataRange().getValues();
+  var hashedPass = hashPassword(newPassword);
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0].toString().trim() !== nomorHp) continue;
+    usersSheet.getRange(i + 1, 3).setValue(hashedPass);
+    return { success: true, message: "Password berhasil diubah. Silakan login ulang." };
+  }
+  return { success: false, error: "Gagal mengubah password" };
 }

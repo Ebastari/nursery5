@@ -6,9 +6,8 @@ import { Button } from '../components/Button';
 import { fetchApiData } from '../data/api';
 import type { ApiRow } from '../data/api';
 import { useStore } from '../store/useStore';
-// ...hapus ApprovalModal...
 import QRCode from 'qrcode';
-import { jsPDF } from 'jspdf';
+import { generateSuratJalanPdf } from '../utils/generateSuratJalanPdf';
 
 const COMPANY_LOGO = 'https://i.ibb.co.com/xSTT9wJK/download.png';
 const COMPANY_NAME = 'PT Energi Batubara Lestari';
@@ -44,7 +43,7 @@ export function SuratJalanScreen() {
 
   const [row, setRow] = useState<ApiRow | null>(null);
   const [allRows, setAllRows] = useState<ApiRow[]>([]);
-  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [qrDataUrl, setQrDataUrl] = useState<string>(''); // for HTML preview only
   const [logoDataUrl, setLogoDataUrl] = useState<string>('');
   const [generating, setGenerating] = useState(false);
   const [isDraft, setIsDraft] = useState(true);
@@ -156,197 +155,42 @@ export function SuratJalanScreen() {
   // ...hapus logic approval preview...
   // ...hapus variabel tidak terpakai...
 
-  // === PDF Generation (shared: draft or final) ===
-  const generatePDF = async (draft: boolean) => {
+  // === PDF Generation — delegates to canonical generateSuratJalanPdf ===
+  const generatePDF = useCallback(async (draft: boolean) => {
+    if (!row) return;
     setGenerating(true);
     try {
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();
-      const margin = 16;
-      const contentW = pageW - margin * 2;
-      let y = 16;
-
-      // Header with logo
-      if (logoDataUrl) {
-        doc.addImage(logoDataUrl, 'PNG', margin, y, 14, 14);
-      }
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(COMPANY_NAME, margin + 18, y + 5);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${COMPANY_UNIT} — ${COMPANY_ADDRESS}`, margin + 18, y + 11);
-
-      y += 20;
-
-      // Line separator
-      doc.setDrawColor(16, 185, 129);
-      doc.setLineWidth(0.8);
-      doc.line(margin, y, pageW - margin, y);
-      y += 8;
-
-      // Title
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('SURAT JALAN DISTRIBUSI BIBIT', pageW / 2, y, { align: 'center' });
-      y += 7;
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`No: ${nomorSurat}`, pageW / 2, y, { align: 'center' });
-      y += 12;
-
-      // Info section
-      const infoLeft = margin;
-      const infoValX = margin + 40;
-      doc.setFontSize(10);
-
-      const infoRows = [
-        ['Tanggal', formatTanggal(row.tanggal)],
-        ['Jenis Bibit', row.bibit],
-        ['Jumlah', `${row.keluar.toLocaleString('id-ID')} polybag`],
-        ['Asal / Sumber', row.sumber || '-'],
-        ['Tujuan / Lokasi', row.tujuan || '-'],
-      ];
-
-      for (const [label, value] of infoRows) {
-        doc.setFont('helvetica', 'bold');
-        doc.text(`${label}`, infoLeft, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`: ${value}`, infoValX, y);
-        y += 6;
-      }
-
-      y += 6;
-
-      // Table
-      const colWidths = [12, contentW * 0.35, contentW * 0.2, contentW * 0.18, contentW * 0.27 - 12];
-      const colX = [margin];
-      for (let i = 1; i < colWidths.length; i++) {
-        colX.push(colX[i - 1] + colWidths[i - 1]);
-      }
-      const rowH = 8;
-
-      // Table header
-      doc.setFillColor(16, 185, 129);
-      doc.setTextColor(255, 255, 255);
-      doc.rect(margin, y, contentW, rowH, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      const headers = ['No', 'Jenis Bibit', 'Jumlah', 'Satuan', 'Keterangan'];
-      for (let i = 0; i < headers.length; i++) {
-        doc.text(headers[i], colX[i] + 2, y + 5.5);
-      }
-      y += rowH;
-
-      // Table row
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(margin, y, contentW, rowH);
-      const tableData = ['1', row.bibit, row.keluar.toLocaleString('id-ID'), 'polybag', `Stok sisa: ${stokSetelah.toLocaleString('id-ID')}`];
-      for (let i = 0; i < tableData.length; i++) {
-        doc.text(tableData[i], colX[i] + 2, y + 5.5);
-      }
-      y += rowH;
-
-      // Bottom line of table
-      doc.line(margin, y, margin + contentW, y);
-      y += 12;
-
-      // Catatan
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'italic');
-      doc.text('Catatan: Pastikan bibit dalam kondisi baik saat penyerahan. Surat jalan ini sebagai bukti distribusi resmi.', margin, y, {
-        maxWidth: contentW,
+      const blob = await generateSuratJalanPdf({
+        nomorSurat,
+        tanggal: formatTanggal(row.tanggal),
+        jenisBibit: row.bibit,
+        jumlah: row.keluar,
+        sumber: row.sumber || '',
+        tujuan: row.tujuan || '-',
+        sisaStok: stokSetelah,
+        dibuatOleh: row.dibuatOleh || '-',
+        driver: row.driver || '-',
+        kodeVerifikasi: kodeVerifikasi || 'PREVIEW',
+        logoDataUrl,
+        isDraft: draft,
+        companyName: COMPANY_NAME,
+        companyUnit: COMPANY_UNIT,
+        companyAddress: COMPANY_ADDRESS,
       });
-      y += 14;
-
-      // Signature section
-      const sigW = contentW / 3;
-      const sigLabels = ['Dibuat oleh', 'Disetujui', 'Driver'];
-      const sigNames = [row.dibuatOleh || '-', 'Mariano Alvarado Simamora', row.driver || '-'];
-      const sigRoles = ['Petugas Nursery', 'Dept Head Revegetasi & Rehabilitasi', 'Sopir / Kurir'];
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      for (let i = 0; i < 3; i++) {
-        const cx = margin + sigW * i + sigW / 2;
-        doc.text(sigLabels[i], cx, y, { align: 'center' });
-      }
-      y += 24;
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      for (let i = 0; i < 3; i++) {
-        const cx = margin + sigW * i + sigW / 2;
-        doc.line(cx - 18, y, cx + 18, y);
-        if (sigNames[i] && sigNames[i] !== '-') {
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(8);
-          doc.text(sigNames[i], cx, y + 4, { align: 'center' });
-          doc.setFont('helvetica', 'normal');
-          doc.text(sigRoles[i], cx, y + 8, { align: 'center' });
-        } else {
-          doc.text(sigRoles[i], cx, y + 5, { align: 'center' });
-        }
-      }
-      y += 16;
-
-      // QR code and footer
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.3);
-      doc.line(margin, y, pageW - margin, y);
-      y += 6;
-
-      if (qrDataUrl) {
-        doc.addImage(qrDataUrl, 'PNG', margin, y, 28, 28);
-      }
-
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
-      doc.text('Scan QR Code untuk verifikasi', margin + 32, y + 6);
-      doc.text('keaslian dokumen via aplikasi Smart Nursery.', margin + 32, y + 11);
-      if (kodeVerifikasi && kodeVerifikasi !== 'PREVIEW') {
-        doc.setFontSize(7);
-        doc.setFont('courier', 'normal');
-        doc.text('Kode: ' + kodeVerifikasi, margin + 32, y + 16);
-      }
-      doc.setFontSize(7);
-      doc.setTextColor(120, 120, 120);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Dicetak otomatis oleh Montana AI Engine`, margin + 32, y + 21);
-      doc.text(`${COMPANY_NAME} — ${COMPANY_UNIT}`, margin + 32, y + 26);
-
-      // === DRAFT WATERMARK ===
-      if (draft) {
-        doc.saveGraphicsState();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const gState = (doc as any).GState({ opacity: 0.08 });
-        doc.setGState(gState);
-        doc.setFontSize(120);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(220, 38, 38);
-        const centerX = pageW / 2;
-        const centerY = pageH / 2;
-        doc.text('DRAFT', centerX, centerY, {
-          align: 'center',
-          angle: 45,
-        });
-        doc.restoreGraphicsState();
-      }
-
-      // ...hapus approval signature...
-
-      const prefix = draft ? 'DRAFT-' : '';
-      doc.save(`${prefix}Surat-Jalan-${nomorSurat.replace(/\//g, '-')}.pdf`);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${draft ? 'DRAFT-' : ''}Surat-Jalan-${nomorSurat.replace(/\//g, '-')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error('PDF generation error:', err);
     } finally {
       setGenerating(false);
     }
-  };
+  }, [row, nomorSurat, stokSetelah, kodeVerifikasi, logoDataUrl]);
 
   const handleReviewDraft = () => generatePDF(true);
   const handleDownloadFinal = () => {
@@ -465,41 +309,30 @@ export function SuratJalanScreen() {
             </span>
           </div>
 
+          {/* Catatan */}
+          <p className="text-[9px] text-gray-400 italic leading-relaxed">
+            Catatan: Pastikan bibit dalam kondisi baik saat penyerahan. Surat jalan ini merupakan bukti distribusi resmi.
+          </p>
+
           {/* Signature section */}
-          <div className="grid grid-cols-3 gap-2 pt-2">
-            {/* Dibuat oleh */}
-            <div className="flex flex-col items-center justify-start h-36">
-              <p className="text-[10px] font-semibold text-gray-700 mb-1">Dibuat oleh</p>
-              <div className="flex items-center justify-center w-full" style={{height: '28px'}}>
-                <div className="border-b border-gray-400 w-24 flex items-center justify-center relative" />
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            {([
+              { label: 'Dibuat oleh', bold: false, name: row.dibuatOleh && row.dibuatOleh !== '-' ? row.dibuatOleh : '', role: 'Petugas Nursery' },
+              { label: 'Disetujui', bold: true, name: 'Mariano Alvarado Simamor', role: 'Dept Head Revegetasi & Rehabilitasi' },
+              { label: 'Driver', bold: false, name: row.driver && row.driver !== '-' ? row.driver : '', role: 'Sopir / Kurir' },
+            ] as const).map(({ label, bold, name, role }) => (
+              <div key={label} className="flex flex-col items-center gap-1">
+                <p className={`text-[10px] text-gray-700 ${bold ? 'font-bold' : 'font-semibold'}`}>{label}</p>
+                <div className="relative flex items-center justify-center w-full" style={{ height: '24px' }}>
+                  <div className="absolute inset-x-0 border-b border-gray-300" style={{ top: '50%' }} />
+                  <div className="relative z-10 w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center">
+                    <span className="text-white text-[9px] font-bold leading-none">✓</span>
+                  </div>
+                </div>
+                <p className="text-[9px] font-bold text-emerald-700 text-center leading-tight">{name}</p>
+                <p className="text-[8px] text-gray-400 text-center leading-tight">{role}</p>
               </div>
-              <div className="flex flex-col items-center mt-2">
-                <p className="text-[10px] font-bold text-gray-800">{row.dibuatOleh && row.dibuatOleh !== '-' ? row.dibuatOleh : ''}</p>
-                <p className="text-[9px] text-gray-400">Petugas Nursery</p>
-              </div>
-            </div>
-            {/* Disetujui */}
-            <div className="flex flex-col items-center justify-start h-36">
-              <p className="text-[10px] font-semibold text-gray-700 mb-1">Disetujui</p>
-              <div className="flex items-center justify-center w-full" style={{height: '28px'}}>
-                <div className="border-b border-gray-400 w-24 flex items-center justify-center relative" />
-              </div>
-              <div className="flex flex-col items-center mt-2">
-                <p className="text-[10px] font-bold text-gray-800">Mariano Alvarado Simamor</p>
-                <p className="text-[9px] text-gray-400">Dept Head Revegetasi & Rehabilitasi</p>
-              </div>
-            </div>
-            {/* Driver */}
-            <div className="flex flex-col items-center justify-start h-36">
-              <p className="text-[10px] font-semibold text-gray-700 mb-1">Driver</p>
-              <div className="flex items-center justify-center w-full" style={{height: '28px'}}>
-                <div className="border-b border-gray-400 w-24 flex items-center justify-center relative" />
-              </div>
-              <div className="flex flex-col items-center mt-2">
-                <p className="text-[10px] font-bold text-gray-800">{row.driver && row.driver !== '-' ? row.driver : ''}</p>
-                <p className="text-[9px] text-gray-400">Sopir / Kurir</p>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* QR Code + Footer */}

@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Camera, Package, Bell, ExternalLink } from 'lucide-react';
 import { NotificationBell } from '../components/NotificationBell';
 import { useStore } from '../store/useStore';
@@ -28,8 +28,9 @@ const pageTitles: Record<string, string> = {
 
 export function Layout() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const title = pageTitles[pathname] || 'Smart Nursery';
-  const { isAdmin } = useStore();
+  const { isAdmin, authUser } = useStore();
 
   return (
     <div className="min-h-screen bg-[#f8f9fb] mx-auto max-w-[420px] relative shadow-2xl">
@@ -40,11 +41,22 @@ export function Layout() {
         </div>
         <h1 className="text-[15px] font-semibold tracking-wide truncate flex-1">{title}</h1>
         <NotificationBell />
-           {isAdmin && (
-             <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/20 text-xs font-semibold">
-               Admin
-             </span>
-           )}
+        {isAdmin && (
+          <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/20 text-xs font-semibold">
+            Admin
+          </span>
+        )}
+        {authUser && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/profile')}
+              title={authUser.nama}
+              className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition font-bold text-sm text-white"
+            >
+              {authUser.nama.charAt(0).toUpperCase()}
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Main content */}

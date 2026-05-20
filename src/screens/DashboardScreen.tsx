@@ -4,7 +4,9 @@ import {
   RefreshCw, MessageCircle, TrendingUp, Package,
   ArrowDownCircle, ArrowUpCircle, MinusCircle,
   FileText, ExternalLink, ChevronDown, ChevronUp,
+  Truck, Clock, CheckCircle, Maximize2, ArrowLeft,
 } from 'lucide-react';
+import { QRCodeOverlay } from '../components/QRCodeOverlay';
 import { Card } from '../components/Card';
 import { ChatbotPanel } from '../components/chatbot/ChatbotPanel';
 import { useStore } from '../store/useStore';
@@ -23,6 +25,18 @@ interface SuratJalanItem {
   linkPdf: string;
 }
 
+interface DistribusiItem {
+  nomorSurat: string;
+  tanggal: string;
+  bibit: string;
+  keluar: number;
+  tujuan: string;
+  kodeVerifikasi: string;
+  statusTerima: string;
+  namaPenerima: string;
+  tanggalTerima: string;
+}
+
 interface DashboardStats {
   totalStok: number;
   totalMasuk: number;
@@ -32,6 +46,7 @@ interface DashboardStats {
   topBibit: { nama: string; stok: number; percent: number }[];
   dailyKeluar: { tanggal: string; total: number }[];
   suratJalan: SuratJalanItem[];
+  distribusi: DistribusiItem[];
 }
 
 function formatTanggal(t: string) {
@@ -49,6 +64,8 @@ const DashboardScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllSurat, setShowAllSurat] = useState(false);
+  const [showAllDistribusi, setShowAllDistribusi] = useState(false);
+  const [fullscreenQR, setFullscreenQR] = useState<DistribusiItem | null>(null);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -89,7 +106,23 @@ const DashboardScreen: React.FC = () => {
           linkPdf: r.linkPdf!,
         }));
 
-      setStats({ totalStok, totalMasuk, totalKeluar, totalMati, jumlahJenis: plants.length, topBibit, dailyKeluar, suratJalan });
+      const distribusi: DistribusiItem[] = rows
+        .filter(r => r.keluar > 0 && r.kodeVerifikasi)
+        .sort((a, b) => b.tanggal.localeCompare(a.tanggal))
+        .slice(0, 20)
+        .map(r => ({
+          nomorSurat: r.nomorSurat || '-',
+          tanggal: r.tanggal,
+          bibit: r.bibit || '-',
+          keluar: r.keluar || 0,
+          tujuan: r.tujuan || '-',
+          kodeVerifikasi: r.kodeVerifikasi!,
+          statusTerima: r.statusTerima || '',
+          namaPenerima: r.namaPenerima || '',
+          tanggalTerima: r.tanggalTerima || '',
+        }));
+
+      setStats({ totalStok, totalMasuk, totalKeluar, totalMati, jumlahJenis: plants.length, topBibit, dailyKeluar, suratJalan, distribusi });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -293,6 +326,96 @@ const DashboardScreen: React.FC = () => {
               )}
             </Card>
 
+            {/* NOTIFIKASI PENGIRIMAN */}
+            <Card className="p-4 rounded-2xl">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-emerald-500" />
+                  <div className="text-sm font-bold text-gray-900">Notifikasi Pengiriman</div>
+                </div>
+                <span className="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded-full">
+                  {stats.distribusi.filter(d => d.statusTerima !== 'diterima').length} menunggu
+                </span>
+              </div>
+
+              {stats.distribusi.length === 0 ? (
+                <div className="text-center py-6 text-gray-400">
+                  <Truck className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Belum ada pengiriman</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {(showAllDistribusi ? stats.distribusi : stats.distribusi.slice(0, 5)).map((item, i) => (
+                      <div key={i} className={`rounded-xl border overflow-hidden ${item.statusTerima === 'diterima' ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-white'}`}>
+                        {item.statusTerima === 'diterima' ? (
+                          <div className="p-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Diterima</span>
+                            </div>
+                            <p className="text-xs font-bold text-gray-900">{item.bibit} · {item.keluar.toLocaleString('id-ID')} polybag</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">{formatTanggal(item.tanggal)} · {item.tujuan}</p>
+                            {item.namaPenerima && (
+                              <p className="text-[10px] text-emerald-600 mt-0.5">Diterima oleh: <strong>{item.namaPenerima}</strong></p>
+                            )}
+                            {item.tanggalTerima && (
+                              <p className="text-[10px] text-gray-400">{item.tanggalTerima} WITA</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="p-3">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">Menunggu Konfirmasi</span>
+                                </div>
+                                <p className="text-xs font-bold text-gray-900">{item.bibit}</p>
+                                <p className="text-[10px] text-gray-500">{item.keluar.toLocaleString('id-ID')} polybag · {formatTanggal(item.tanggal)}</p>
+                                <p className="text-[10px] text-blue-600 truncate">{item.tujuan}</p>
+                                {item.nomorSurat !== '-' && (
+                                  <p className="text-[10px] font-mono text-gray-400 mt-0.5">{item.nomorSurat}</p>
+                                )}
+                              </div>
+                              <div className="shrink-0 flex flex-col items-center gap-1">
+                                <QRCodeOverlay value={`VERIFY:${item.kodeVerifikasi}`} size={72} />
+                                <button
+                                  onClick={() => setFullscreenQR(item)}
+                                  className="flex items-center gap-1 text-[10px] text-blue-600 font-semibold hover:text-blue-800 transition-colors"
+                                >
+                                  <Maximize2 className="w-3 h-3" />
+                                  Perbesar
+                                </button>
+                              </div>
+                            </div>
+                            <div className="mt-2 px-2 py-1.5 rounded-lg bg-blue-50 border border-blue-200">
+                              <p className="text-[10px] text-blue-700 text-center font-medium">
+                                📱 Serahkan barcode ini ke tim lapangan
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {stats.distribusi.length > 5 && (
+                    <button
+                      onClick={() => setShowAllDistribusi(v => !v)}
+                      className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-gray-200 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                      {showAllDistribusi ? (
+                        <><ChevronUp className="w-3.5 h-3.5" /> Tampilkan lebih sedikit</>
+                      ) : (
+                        <><ChevronDown className="w-3.5 h-3.5" /> Lihat semua {stats.distribusi.length} pengiriman</>
+                      )}
+                    </button>
+                  )}
+                </>
+              )}
+            </Card>
+
             {/* KALENDER KELUAR HARIAN */}
             <Card className="p-4 rounded-2xl border border-gray-200">
               <div className="text-sm font-bold mb-3 text-gray-800">Pengeluaran Harian</div>
@@ -322,6 +445,58 @@ const DashboardScreen: React.FC = () => {
       <AnimatePresence>
         {chatOpen && <ChatbotPanel onClose={() => setChatOpen(false)} mode="info" />}
       </AnimatePresence>
+
+      {/* FULLSCREEN QR OVERLAY */}
+      {fullscreenQR && (
+        <div className="fixed inset-0 z-50 bg-gray-950 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 py-5">
+            <button
+              onClick={() => setFullscreenQR(null)}
+              className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+            <div>
+              <p className="font-bold text-sm text-white leading-tight">{fullscreenQR.bibit}</p>
+              {fullscreenQR.nomorSurat !== '-' && (
+                <p className="text-[11px] text-gray-400 font-mono">{fullscreenQR.nomorSurat}</p>
+              )}
+            </div>
+          </div>
+
+          {/* QR Code — center */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8">
+            <div className="bg-white p-4 rounded-3xl shadow-2xl">
+              <QRCodeOverlay
+                value={`VERIFY:${fullscreenQR.kodeVerifikasi}`}
+                size={260}
+                className="!border-0 !shadow-none !rounded-none"
+              />
+            </div>
+
+            <div className="text-center space-y-1.5">
+              <p className="text-white font-bold text-lg">{fullscreenQR.bibit}</p>
+              <p className="text-gray-400 text-sm">{fullscreenQR.keluar.toLocaleString('id-ID')} polybag</p>
+              <p className="text-gray-400 text-sm truncate max-w-xs">{fullscreenQR.tujuan}</p>
+              <p className="text-[11px] text-gray-600 mt-1">{formatTanggal(fullscreenQR.tanggal)}</p>
+            </div>
+
+            <div className="px-4 py-2.5 rounded-2xl bg-blue-500/20 border border-blue-500/30">
+              <p className="text-sm text-blue-300 font-medium text-center">
+                📱 Minta tim lapangan scan barcode ini
+              </p>
+            </div>
+          </div>
+
+          {/* Footer — kode verifikasi */}
+          <div className="px-8 pb-10 text-center">
+            <p className="text-[11px] text-gray-600 font-mono tracking-wider">
+              {fullscreenQR.kodeVerifikasi}
+            </p>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -1,5 +1,5 @@
 import type { PlantStock, ActivityRecord, Shipment, Document, Alert } from './types';
-import { fetchApiData } from './api';
+import { fetchApiData, API_URL } from './api';
 import type { ApiRow } from './api';
 
 // === Derive PlantStock from live API rows ===
@@ -165,10 +165,8 @@ async submitActivity(record: Omit<ActivityRecord, 'id'>): Promise<ActivityRecord
       driver: record.driver || '',
     };
 
-    // Direct to Google Apps Script (bypass proxy issues)
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbz1ihQ483EsmV-f7foHSVe5EJrxQ-l4_pC4tjUM5Ah27uaCc5oiecKupH450_LlvWwc/exec';
-    // Google Apps Script CORS workaround: gunakan text/plain untuk hindari preflight
-    const res = await fetch(GAS_URL, {
+    const submitUrl = import.meta.env.DEV ? '/api/gas' : API_URL;
+    const res = await fetch(submitUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(gasPayload)

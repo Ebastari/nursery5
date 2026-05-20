@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Montana AI • Panduan Sengon Potting</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b141a;--header:#202c33;--accent:#00a884;--user:#dcf8c6;--bot:#2a3942;--muted:#aebac1;--card:#162126;}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;font-family:'Inter',system-ui;background:var(--bg);color:#e9edef;}
+.frame{height:100vh;display:flex;align-items:center;justify-content:center;padding:12px;}
+.phone{width:100%;max-width:420px;height:92vh;background:#10191f;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;display:flex;flex-direction:column;}
+.header{height:62px;background:var(--header);display:flex;align-items:center;padding:10px 14px;gap:12px;}
+.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;}
+.meta .name{font-weight:700;font-size:16px;}
+.meta .sub{font-size:12px;color:var(--muted);}
+.banner{padding:8px 14px;text-align:center;color:var(--muted);font-size:13px;border-bottom:1px solid rgba(255,255,255,.05);}
+.chat{flex:1;padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;background:#121c21;}
+.msg-row{display:flex;flex-direction:column;max-width:85%;animation:fadeIn .25s ease forwards;opacity:0;transform:translateY(6px);}
+.msg-row.user{align-self:flex-end;align-items:flex-end;}
+.msg-row.bot{align-self:flex-start;align-items:flex-start;}
+@keyframes fadeIn{to{opacity:1;transform:translateY(0);}}
+.bubble{padding:10px 14px;border-radius:14px;line-height:1.55;font-size:14px;max-width:100%;white-space:pre-wrap;}
+.bubble.user{background:var(--user);color:#000;border-bottom-right-radius:4px;}
+.bubble.bot{background:var(--bot);border-bottom-left-radius:4px;}
+.ts{font-size:11px;color:var(--muted);margin-top:3px;}
+.composer{display:flex;gap:8px;align-items:center;padding:10px;background:#162126;border-top:1px solid rgba(255,255,255,.05);}
+textarea{flex:1;min-height:40px;padding:10px;border-radius:22px;border:none;background:#1a2a30;color:#fff;font-size:15px;outline:none;resize:none;max-height:110px;transition:background .2s;}
+textarea:focus{background:#20363d;}
+.send{width:46px;height:46px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .2s;}
+.send:hover{opacity:.85;}
+.quick-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;align-self:flex-start;max-width:100%;}
+.quick-btn{background:#223b42;color:#fff;padding:6px 10px;border:none;border-radius:16px;cursor:pointer;font-size:13px;transition:background .15s;}
+.quick-btn:hover{background:#2b4f56;}
+.card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;font-size:13px;color:#d4e2e7;margin:2px 0;}
+.table{width:100%;border-collapse:collapse;font-size:13px;}
+.table th,.table td{border-bottom:1px solid rgba(255,255,255,.06);padding:6px 4px;text-align:left;vertical-align:middle;}
+.table th{color:#bcd0d7;font-weight:600;}
+/* inputs */
+input[type=date],input[type=number],input[type=text],select,.note-ta{
+  padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);
+  margin-top:4px;background:#1a2a30;color:#fff;font-size:13px;
+  display:block;width:100%;outline:none;transition:border-color .2s;font-family:inherit;}
+input:focus,select:focus,.note-ta:focus{border-color:var(--accent);}
+.note-ta{resize:vertical;min-height:72px;}
+.lbl{font-size:12px;color:var(--muted);display:block;margin-top:8px;}
+/* tags */
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin:1px;}
+.tag.aman{background:#1a4a2e;color:#4ade80;}
+.tag.warn{background:#3a2e00;color:#fbbf24;}
+.tag.danger{background:#3a1a1a;color:#f87171;}
+/* stok bar */
+.sbar-wrap{background:#1a2a30;border-radius:8px;height:8px;overflow:hidden;margin:4px 0 8px;}
+.sbar{height:100%;border-radius:8px;transition:width .5s;}
+/* note item */
+.note-item{background:#1a2a30;border-radius:10px;padding:8px 10px;margin:4px 0;font-size:13px;}
+.note-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.note-cat{font-size:11px;color:var(--accent);font-weight:700;}
+.note-date{font-size:11px;color:var(--muted);}
+.note-del{background:none;border:none;color:#ef4444;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;}
+.note-body{color:#e9edef;line-height:1.5;}
+/* suggest box */
+.sbox{background:linear-gradient(135deg,#162126,#1a2f38);border:1px solid #00a88440;border-radius:12px;padding:12px;margin:2px 0;}
+.sbox-title{color:var(--accent);font-weight:700;font-size:14px;margin-bottom:8px;}
+.sbox-item{padding:6px 0;font-size:12px;color:#d4e2e7;border-bottom:1px solid rgba(255,255,255,.04);line-height:1.5;}
+.sbox-item:last-child{border:none;padding-bottom:0;}
+.sbox-item b{color:#fff;}
+/* section divider */
+.sdiv{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:6px 0 2px;align-self:flex-start;}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="phone">
+    <div class="header">
+      <img class="avatar" src="https://i.pravatar.cc/150?img=5" alt="Montana">
+      <div class="meta">
+        <div class="name">Montana AI</div>
+        <div class="sub">Asisten Penanaman</div>
+      </div>
+    </div>
+    <div class="banner">🔒 Informasi ini bersifat rahasia.</div>
+    <div id="chat" class="chat" aria-live="polite"></div>
+    <div class="composer">
+      <textarea id="input" placeholder="Ketik: stok, catatan, pupuk, hama, cuaca, kalkulator…"></textarea>
+      <button class="send" id="sendBtn">➤</button>
+    </div>
+  </div>
+</div>
+<script>
+// ─── HELPERS ───────────────────────────────────────────────
+const chat    = document.getElementById('chat');
+const inp     = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const scrollB = () => chat.scrollTop = chat.scrollHeight;
+const fmt = (n,dec=0) => !isFinite(n)?'-':Number(n).toLocaleString('id-ID',{maximumFractionDigits:dec,minimumFractionDigits:dec});
+const nowT  = () => new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+const nowFull = () => new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+const LS = {
+  get:(k,d) => { try{ return JSON.parse(localStorage.getItem(k))??d; }catch{return d;} },
+  set:(k,v) => localStorage.setItem(k,JSON.stringify(v)),
+};
+
+function bubble(txt,who='bot'){
+  const d=document.createElement('div');
+  d.className=`msg-row ${who}`;
+  d.innerHTML=`<div class='bubble ${who}'>${txt}</div><span class='ts'>${nowT()}</span>`;
+  chat.appendChild(d); scrollB();
+}
+function card(html){
+  const el=document.createElement('div'); el.className='card';
+  el.innerHTML=html; chat.appendChild(el); scrollB();
+}
+function appendEl(el){ chat.appendChild(el); scrollB(); }
+function sdiv(txt){
+  const d=document.createElement('div'); d.className='sdiv';
+  d.textContent=txt; appendEl(d);
+}
+function qr(arr){
+  const div=document.createElement('div'); div.className='quick-btns';
+  arr.forEach(b=>{
+    const btn=document.createElement('button'); btn.className='quick-btn';
+    btn.textContent=b.label;
+    btn.onclick=()=>{ bubble(b.label,'user'); b.action(); div.remove(); };
+    div.appendChild(btn);
+  });
+  appendEl(div);
+}
+function back(){ qr([{label:'⬅️ Kembali ke Menu',action:mainMenu}]); }
+
+// ─── MAIN MENU ─────────────────────────────────────────────
+function mainMenu(){
+  sdiv('📚 Panduan & Informasi');
+  qr([
+    {label:'ℹ️ Tentang Sengon',        action:showTentangSengon},
+    {label:'📖 Panduan Utama',          action:showPanduan},
+    {label:'🌱 Persiapan Bibit',        action:showPersiapan},
+    {label:'🪴 Proses Potting',         action:showPotting},
+    {label:'💧 Penyiraman & Pemupukan', action:showPenyiraman},
+    {label:'☀️ Perawatan',              action:showPerawatan},
+    {label:'🐛 Hama & Penyakit',        action:showHamaPenyakit},
+    {label:'📅 Jadwal Monitoring',      action:showMonitoring},
+    {label:'🌦️ Info Cuaca',             action:weatherRantau},
+  ]);
+  sdiv('🛠️ Tools & Lapangan');
+  qr([
+    {label:'🧮 Kalkulator',             action:showKalkulatorMenu},
+    {label:'📊 Laporan & Biaya',        action:showLaporanBiaya},
+    {label:'📦 Stok Bibit',             action:showStokBibit},
+    {label:'📝 Catatan Lapangan',       action:showCatatan},
+    {label:'💊 Dosis Pupuk (Fase)',     action:showDosisPupuk},
+    {label:'🔧 Troubleshooting',        action:showTroubleshooting},
+    {label:'💡 Saran Pengembangan',     action:showSaranPengembangan},
+  ]);
+}
+
+// ─── TENTANG SENGON ────────────────────────────────────────
+function showTentangSengon(){
+  bubble(`<b>Tentang Sengon</b><br><i>Falcataria moluccana</i>, Famili Fabaceae. Pohon legum cepat tumbuh, penambat nitrogen via simbiosis <i>Rhizobium</i>. Cocok untuk reklamasi pasca tambang.<br><br>Pilih topik:`);
+  qr([
+    {label:'🌱 Aspek Spesies',      action:showAspekSpesies},
+    {label:'⚙️ Aspek Teknis',       action:showAspekTeknis},
+    {label:'🪴 Budidaya & Potting', action:showAspekBudidaya},
+    {label:'🌳 Revegetasi Tambang', action:showAspekRevegetasi},
+    {label:'📋 Rekomendasi Singkat',action:showRekomendasi},
+    {label:'⬅️ Kembali ke Menu',    action:mainMenu},
+  ]);
+}
+function showAspekSpesies(){
+  bubble(`<b>1️⃣ Aspek Spesies</b><br>Famili <i>Fabaceae</i>, subfamili <i>Mimosoideae</i>. Tinggi 30–40 m, diameter 40–60 cm. Toleran pH 4,5–6,5, suhu tinggi, dan lahan miskin hara. Simbiosis <i>Rhizobium</i> menambat nitrogen bebas, memperbaiki kesuburan dan agregat tanah.`);
+  qr([{label:'➡️ Aspek Teknis',action:showAspekTeknis},{label:'⬅️ Kembali',action:showTentangSengon}]);
+}
+function showAspekTeknis(){
+  bubble(`<b>2️⃣ Aspek Teknis</b><br>Fast growing species ideal untuk revegetasi pasca tambang. Akar dalam menahan erosi & memperbaiki aerasi. Jarak tanam 3×3 m atau 4×4 m. Lubang 30×30×30 cm + pupuk organik 2–3 kg + dolomit 50 g/lubang.`);
+  qr([{label:'➡️ Budidaya & Potting',action:showAspekBudidaya},{label:'⬅️ Kembali',action:showTentangSengon}]);
+}
+function showAspekBudidaya(){
+  bubble(`<b>3️⃣ Budidaya & Potting</b><br>Media: topsoil:kompos:pasir 2:1:1, pH 5,5–6,5. Polybag 20×25 cm. Tambah inokulan <i>Rhizobium</i> umur 2 minggu. Rendam benih 60°C 15 menit sebelum semai. Siap tanam umur 2,5–3 bulan (≥40 cm, diameter ≥5 mm).`);
+  qr([{label:'➡️ Revegetasi Tambang',action:showAspekRevegetasi},{label:'⬅️ Kembali',action:showTentangSengon}]);
+}
+function showAspekRevegetasi(){
+  bubble(`<b>4️⃣ Revegetasi Pasca Tambang</b><br>Sengon sebagai spesies pionir. Dalam 12–18 bulan tumbuh 4–6 m, menurunkan suhu tanah, menahan debu, meningkatkan bahan organik. Setelah 3 tahun terbentuk serasah alami yang mempercepat suksesi vegetasi sekunder.`);
+  qr([{label:'➡️ Rekomendasi Singkat',action:showRekomendasi},{label:'⬅️ Kembali',action:showTentangSengon}]);
+}
+function showRekomendasi(){
+  bubble(`<b>5️⃣ Rekomendasi Singkat</b><br>• Jarak tanam: 4×4 m ≈ 625 pohon/ha<br>• Pupuk dasar: 1 kg/tanaman<br>• Kapur/Dolomit: 10 g/tanaman<br>• Cover crop: 30 kg/ha<br>• Pupuk organik pra-tanam: 1 ton/ha<br><br><small><i>Sumber: Balai Penelitian Kehutanan & riset revegetasi tropis.</i></small>`);
+  qr([{label:'🔁 Ulangi',action:showTentangSengon},{label:'⬅️ Menu',action:mainMenu}]);
+}
+
+// ─── PANDUAN DASAR ─────────────────────────────────────────
+function showPanduan()   { bubble('<b>Panduan Utama</b><br>Urutan: Persiapan → Potting → Penyiraman/Pemupukan → Perawatan → Hama/Penyakit → Monitoring.'); back(); }
+function showPersiapan() { bubble('<b>Persiapan Bibit</b><br>Umur 2–3 bln; tinggi 25–40 cm; akar sehat. Media semai: tanah:sekam bakar:pupuk kandang = 2:1:1. Adaptasi 3–5 hari.'); back(); }
+function showPotting()   { bubble('<b>Proses Potting</b><br>Media tanah:kompos:sekam 2:1:1; isi polybag ¾; tanam; siram ringan; teduh 7 hari lalu terang bertahap.'); back(); }
+function showPenyiraman(){ bubble('<b>Penyiraman & Pemupukan</b><br>Siram 2×/hari (07–09 & 16–17). Hari 10–14 NPK cair ±1 g/L; umur 1 bln POC; lanjut tiap 2 minggu.'); back(); }
+function showPerawatan() { bubble('<b>Perawatan & Pencahayaan</b><br>Sinar pagi baik; hindari terik siang; rotasi pot mingguan; pangkas daun kering; pastikan drainase.'); back(); }
+
+// ─── HAMA & PENYAKIT ───────────────────────────────────────
+function showHamaPenyakit(){
+  bubble('<b>Analisis Hama & Penyakit</b><br>Pilih gejala dominan:');
+  qr([
+    {label:'🍃 Daun berlubang/terpotong',  action:()=>diagnose('daun_rusak')},
+    {label:'🟡 Daun menguning/menggulung', action:()=>diagnose('daun_kuning')},
+    {label:'🌫️ Daun bertepung putih',      action:()=>diagnose('embun_tepung')},
+    {label:'🥀 Tiba-tiba layu',            action:()=>diagnose('layu_mendadak')},
+    {label:'🪱 Akar terganggu',            action:()=>diagnose('akar_terserang')},
+    {label:'⬅️ Kembali ke Menu',           action:mainMenu},
+  ]);
+}
+function diagnose(code){
+  const maps={
+    daun_rusak:`<b>Ulat / Belalang</b><br>Daun berlubang tidak beraturan/terpotong rapi. Semprot mimba/bawang putih mingguan; pasang jaring; bersihkan gulma.`,
+    daun_kuning:`<b>Kutu daun / Kurang hara / Overwatering</b><br>Cek bawah daun; kurangi siram; POC ringan; air sabun 2 tetes/L (bilas esok hari).`,
+    embun_tepung:`<b>Powdery mildew</b><br>Lapisan putih keabu-abuan. Tingkatkan sirkulasi udara; semprot air+susu 9:1; hindari menyiram mengenai daun.`,
+    layu_mendadak:`<b>Fusarium / Genangan</b><br>Pangkal batang gelap/lembek. Perbaiki drainase; singkirkan tanaman sakit dari area nursery.`,
+    akar_terserang:`<b>Rayap / Orong-orong</b><br>Akar berongga; media menggumpal. Tambah dolomit 1 sdm/polybag; siram rebusan serai; pasang perangkap.`
+  };
+  bubble(maps[code]||'Pilih gejala terlebih dahulu.');
+  qr([
+    {label:'📋 Panduan IPM', action:()=>bubble('IPM: kebersihan area, semprot organik tiap 10 hari, jarak antar polybag 10–15 cm, observasi harian, catat gejala/cuaca/tindakan.')},
+    {label:'🧪 Resep Organik',action:()=>bubble('• Bawang+cabai: 5+3 siung, rendam 1L semalam\n• Mimba: 250g/2L rebus 15 menit\n• Serai+jeruk: 5 batang+1 buah+1L')},
+    {label:'⬅️ Kembali',      action:showHamaPenyakit},
+  ]);
+}
+
+// ─── MONITORING ────────────────────────────────────────────
+function showMonitoring(){
+  bubble('<b>Penjadwalan Penanaman</b><br>Buat jadwal mulai dari pembenihan hingga tanam lapangan.');
+  qr([
+    {label:'🌱 Ya, buat jadwal',action:calendarSetup},
+    {label:'⏳ Nanti saja',      action:()=>bubble('Anda bisa membuka menu Jadwal Monitoring kapan pun.')},
+  ]);
+}
+function calendarSetup(){
+  bubble('Pilih tanggal <b>mulai pembenihan</b>:');
+  const d=document.createElement('input'); d.type='date';
+  d.style.cssText='padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:#1a2a30;color:#fff;font-size:13px;margin-top:6px;display:block;';
+  d.onchange=()=>generateSchedule(d.value);
+  appendEl(d);
+}
+function generateSchedule(start){
+  if(!start){bubble('Harap pilih tanggal mulai.');return;}
+  const sd=new Date(start);
+  const f=x=>x.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const add=(n)=>{ const x=new Date(sd); x.setDate(x.getDate()+n); return x; };
+  card(`<b>Jadwal Penanaman & Perawatan</b><br>🧪 Pembenihan: <b>${f(sd)}</b><br>🪴 Potting: <b>${f(add(21))}</b><br>🌱 Perawatan intensif: <b>${f(add(42))}</b><br>🌳 Tanam lapangan: <b>${f(add(60))}</b><br><small>Sesuaikan dengan prakiraan cuaca sebelum tanam lapangan.</small>`);
+}
+
+// ─── KALKULATOR ────────────────────────────────────────────
+function showKalkulatorMenu(){
+  bubble('<b>Pusat Kalkulator Teknis Sengon</b>');
+  qr([
+    {label:'Kebutuhan Bibit',               action:calcBibitUI},
+    {label:'Kebutuhan Benih',               action:calcBenihUI},
+    {label:'Estimasi Waktu & Tenaga Kerja', action:calcWaktuUI},
+    {label:'Standar 4×4 per Hektar',        action:calcStandarSengon},
+    {label:'Uji Mandiri (Self Test)',        action:runSelfTests},
+    {label:'⬅️ Kembali ke Menu',            action:mainMenu},
+  ]);
+}
+
+function mkTable(rows){
+  const t=document.createElement('table'); t.className='table';
+  t.innerHTML=`<thead><tr><th>Parameter</th><th>Nilai</th><th>Keterangan</th></tr></thead><tbody>${rows}</tbody>`;
+  return t;
+}
+function mkBtn(label,fn){
+  const b=document.createElement('button'); b.className='quick-btn'; b.style.margin='8px 0';
+  b.textContent=label; b.onclick=fn; return b;
+}
+
+function calcBibitUI(){
+  card('<b>Kalkulator Kebutuhan Bibit</b>');
+  appendEl(mkTable(`
+    <tr><td>Luas area (m²)</td><td><input id="luas" type="number" value="10000"></td><td>Total luas lahan.</td></tr>
+    <tr><td>Jarak antar baris (m)</td><td><input id="jb" type="number" value="4"></td><td>Jarak antar baris pohon.</td></tr>
+    <tr><td>Jarak dalam baris (m)</td><td><input id="jt" type="number" value="4"></td><td>Jarak antar tanaman.</td></tr>
+    <tr><td>Cadangan (%)</td><td><input id="sus" type="number" value="10"></td><td>Bibit cadangan ganti mati.</td></tr>`));
+  appendEl(mkBtn('Hitung',()=>{
+    const A=+document.getElementById('luas').value||0,JB=+document.getElementById('jb').value||0,JT=+document.getElementById('jt').value||0,S=(+document.getElementById('sus').value||0)/100;
+    if(!A||!JB||!JT){bubble('Isi semua nilai dengan benar.');return;}
+    card(`<b>Hasil</b><br>Titik tanam: <b>${fmt(A/(JB*JT),0)}</b><br>Total bibit (+ cadangan ${fmt(S*100)}%): <b>${fmt(Math.ceil(A/(JB*JT)*(1+S)))}</b>`);
+  }));
+}
+
+function calcBenihUI(){
+  card('<b>Kalkulator Kebutuhan Benih</b>');
+  appendEl(mkTable(`
+    <tr><td>Target bibit jadi</td><td><input id="tgt" type="number" value="1000"></td><td>Jumlah bibit yang diinginkan.</td></tr>
+    <tr><td>Viabilitas benih (%)</td><td><input id="vib" type="number" value="70"></td><td>% benih yang tumbuh normal.</td></tr>
+    <tr><td>Susut seleksi (%)</td><td><input id="sel" type="number" value="10"></td><td>% bibit tidak layak tanam.</td></tr>`));
+  appendEl(mkBtn('Hitung',()=>{
+    const T=+document.getElementById('tgt').value||0,V=(+document.getElementById('vib').value||0)/100,S=(+document.getElementById('sel').value||0)/100;
+    if(!T||!V){bubble('Isi target dan viabilitas.');return;}
+    card(`<b>Hasil</b><br>Estimasi benih: <b>${fmt(Math.ceil(T/(V*(1-S))))}</b> butir`);
+  }));
+}
+
+function calcWaktuUI(){
+  card('<b>Estimasi Waktu & Tenaga Kerja</b>');
+  appendEl(mkTable(`
+    <tr><td>Jumlah bibit (unit)</td><td><input id="nw" type="number" value="1000"></td><td>Total bibit yang diproses.</td></tr>
+    <tr><td>Kecepatan (bibit/jam/org)</td><td><input id="rw" type="number" value="60"></td><td>Kapasitas satu orang per jam.</td></tr>
+    <tr><td>Jumlah pekerja</td><td><input id="pw" type="number" value="4"></td><td>Total tenaga kerja.</td></tr>`));
+  appendEl(mkBtn('Hitung',()=>{
+    const n=+document.getElementById('nw').value||0,r=+document.getElementById('rw').value||0,p=+document.getElementById('pw').value||0;
+    if(!n||!r||!p){bubble('Isi semua nilai.');return;}
+    const jo=n/r,jk=jo/p,hr=jk/6;
+    card(`<b>Hasil</b><br>Jam-orang total: <b>${fmt(jo,1)}</b> jam<br>Waktu kolektif: <b>${fmt(jk,1)}</b> jam<br>Estimasi hari kerja (6 jam/hari): <b>${fmt(hr,2)}</b> hari`);
+  }));
+}
+
+function calcStandarSengon(){
+  const titik=10000/(4*4);
+  card('<b>Standar Teknis Sengon (4×4 m, 1 Ha)</b>');
+  appendEl(mkTable(`
+    <tr><td>Titik tanam</td><td>${fmt(titik,0)} pohon/ha</td><td>Jarak 4×4 m per hektar.</td></tr>
+    <tr><td>Pupuk dasar</td><td>${fmt(titik)} kg</td><td>1 kg/tanaman.</td></tr>
+    <tr><td>Kapur/Dolomit</td><td>${fmt(titik*10/1000)} kg</td><td>10 g/tanaman.</td></tr>
+    <tr><td>Cover crop</td><td>30 kg/ha</td><td>Benih tanaman penutup tanah.</td></tr>
+    <tr><td>Pupuk organik pra-tanam</td><td>1 ton/ha</td><td>Kompos atau pupuk kandang.</td></tr>`));
+}
+
+function runSelfTests(){
+  const t1=10000/(4*4)===625,t2=Math.ceil(625*1.1)===688,t3=Math.ceil(1000/(0.7*0.9))===1588,t4=Math.abs((1000/60)/4-4.1666)<0.05;
+  card(`<b>Hasil Pengujian Logika</b><br>625 titik (4×4 m, 1 ha): <b>${t1?'✅ OK':'❌ GAGAL'}</b><br>688 bibit (+10% cadangan): <b>${t2?'✅ OK':'❌ GAGAL'}</b><br>1.588 benih (@70% viab, 10% susut): <b>${t3?'✅ OK':'❌ GAGAL'}</b><br>4.17 jam/org (1000 bibit, 4 org): <b>${t4?'✅ OK':'❌ GAGAL'}</b>`);
+}
+
+// ─── LAPORAN & ESTIMASI BIAYA ──────────────────────────────
+function showLaporanBiaya(){
+  card('<b>Laporan & Estimasi Biaya Penanaman Sengon</b><br><small style="color:var(--muted)">Isi kolom Nilai sesuai kondisi lapangan.</small>');
+  appendEl(mkTable(`
+    <tr><td>Luas areal (ha)</td><td><input id="ha" type="number" value="1"></td><td>Luas total area.</td></tr>
+    <tr><td>Jarak antar baris (m)</td><td><input id="jbL" type="number" value="4"></td><td>Antar baris pohon.</td></tr>
+    <tr><td>Jarak dalam baris (m)</td><td><input id="jdL" type="number" value="4"></td><td>Antar tanaman.</td></tr>
+    <tr><td>Cadangan (%)</td><td><input id="susL" type="number" value="10"></td><td>Bibit cadangan.</td></tr>
+    <tr><td>Harga bibit (Rp/unit)</td><td><input id="hB" type="number" value="1500"></td><td>Satu bibit polybag.</td></tr>
+    <tr><td>Harga benih (Rp/butir)</td><td><input id="hBn" type="number" value="300"></td><td>Satu butir benih.</td></tr>
+    <tr><td>Viabilitas benih (%)</td><td><input id="vibL" type="number" value="70"></td><td>% benih tumbuh.</td></tr>
+    <tr><td>Susut seleksi (%)</td><td><input id="selL" type="number" value="10"></td><td>% bibit tidak layak.</td></tr>
+    <tr><td>Harga pupuk dasar (Rp/kg)</td><td><input id="hPD" type="number" value="3000"></td><td>NPK/pupuk dasar.</td></tr>
+    <tr><td>Harga kapur/dolomit (Rp/kg)</td><td><input id="hKp" type="number" value="2000"></td><td>Penetral tanah.</td></tr>
+    <tr><td>Harga cover crop (Rp/kg)</td><td><input id="hCC" type="number" value="25000"></td><td>Benih penutup tanah.</td></tr>
+    <tr><td>Harga pupuk organik (Rp/ton)</td><td><input id="hPO" type="number" value="600000"></td><td>Kompos/pupuk kandang.</td></tr>
+    <tr><td>Upah tenaga kerja (Rp/jam/org)</td><td><input id="wg" type="number" value="30000"></td><td>Upah rata-rata.</td></tr>
+    <tr><td>Kecepatan potting (bibit/jam/org)</td><td><input id="rt" type="number" value="60"></td><td>Kapasitas per jam.</td></tr>
+    <tr><td>Jumlah pekerja (orang)</td><td><input id="pk" type="number" value="4"></td><td>Jumlah tenaga kerja.</td></tr>`));
+  appendEl(mkBtn('Hitung Estimasi Biaya',()=>{
+    const g=id=>(+document.getElementById(id).value)||0;
+    const ha=g('ha'),JB=g('jbL'),JD=g('jdL'),S=g('susL')/100;
+    if(!ha||!JB||!JD){bubble('Isi luas dan jarak tanam yang valid.');return;}
+    const titik=(ha*10000)/(JB*JD),tBibit=Math.ceil(titik*(1+S));
+    const benih=Math.ceil(tBibit/((g('vibL')/100)*(1-g('selL')/100)));
+    const biaya={
+      bibit:tBibit*g('hB'), benih:benih*g('hBn'),
+      pupukDasar:titik*g('hPD'), kapur:(titik*10/1000)*g('hKp'),
+      cover:30*ha*g('hCC'), pupukOrganik:ha*g('hPO'),
+      tenagaKerja:(tBibit/(g('rt')||1))*g('wg'),
+    };
+    const total=Object.values(biaya).reduce((a,b)=>a+b,0);
+    card(`<b>Laporan Estimasi Biaya</b><br><small>${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</small><br><br>
+    <b>Ringkasan:</b><br>
+    • Luas: <b>${ha}</b> ha | Pola: <b>${JB}×${JD} m</b><br>
+    • Titik tanam: <b>${fmt(titik,0)}</b> | Total bibit: <b>${fmt(tBibit)}</b><br>
+    • Benih: <b>${fmt(benih)}</b> butir<br><br>
+    <b>Rincian Biaya:</b><br>
+    Bibit: Rp ${fmt(biaya.bibit)}<br>
+    Benih: Rp ${fmt(biaya.benih)}<br>
+    Pupuk dasar: Rp ${fmt(biaya.pupukDasar)}<br>
+    Kapur: Rp ${fmt(biaya.kapur)}<br>
+    Cover crop: Rp ${fmt(biaya.cover)}<br>
+    Pupuk organik: Rp ${fmt(biaya.pupukOrganik)}<br>
+    Tenaga kerja: Rp ${fmt(biaya.tenagaKerja)}<br><br>
+    <b>Total: Rp ${fmt(total)}</b><br>
+    <small style="color:var(--muted)">*Estimasi simulatif. Sesuaikan dengan harga lapangan.</small>`);
+  }));
+}
+
+// ─── CUACA ─────────────────────────────────────────────────
+async function weatherRantau(){
+  bubble('🔄 Mengambil data cuaca Rantau, Tapin, Kalimantan Selatan…');
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=-2.9833&longitude=115.0500&current=temperature_2m,precipitation,wind_speed_10m,wind_direction_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&timezone=Asia%2FJakarta`;
+    const j=await(await fetch(url)).json();
+    const c=j.current,d=j.daily;
+    const arah=deg=>['Utara','Timur Laut','Timur','Tenggara','Selatan','Barat Daya','Barat','Barat Laut'][Math.round(deg/45)%8];
+    card(`<b>Cuaca: Rantau, Tapin (Kalsel)</b><br>${new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}<br>🌡️ Suhu: ${c.temperature_2m}°C (Maks ${d.temperature_2m_max[0]}°C / Min ${d.temperature_2m_min[0]}°C)<br>💧 Kelembapan: ${c.relative_humidity_2m}%<br>☔ Hujan: ${d.precipitation_sum[0]} mm<br>🌬️ Angin: ${c.wind_speed_10m} km/jam (${arah(c.wind_direction_10m)})`);
+    const rain=d.precipitation_sum[0],vmax=d.wind_speed_10m_max[0];
+    const [rekom,alasan]=rain>=5||vmax>30
+      ?['⛔ Sebaiknya tunda penanaman','Hujan tinggi atau angin kencang — risiko rebah & genangan.']
+      :rain>=1?['⚠️ Bisa menanam dengan hati-hati','Hujan ringan; pastikan drainase baik.']
+      :['✅ Layak menanam hari ini','Curah hujan rendah, angin aman.'];
+    card(`${rekom}<br><small>${alasan}</small>`);
+  }catch(e){ card('⚠️ Gagal memuat prakiraan cuaca. Periksa koneksi internet.'); }
+  back();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FITUR BARU 1 — STOK BIBIT
+// ═══════════════════════════════════════════════════════════
+function showStokBibit(){
+  const stok=LS.get('montanaStok',{});
+  const keys=Object.keys(stok);
+  let html='<b>📦 Manajemen Stok Bibit</b><br><small style="color:var(--muted)">Disimpan lokal di perangkat ini.</small><br><br>';
+  if(!keys.length){
+    html+='<i style="color:var(--muted)">Belum ada data stok. Tambahkan menggunakan tombol di bawah.</i>';
+  } else {
+    keys.forEach(j=>{
+      const s=stok[j],sisa=Math.max(0,(s.masuk||0)-(s.keluar||0));
+      const pct=s.masuk>0?Math.min(100,(sisa/s.masuk)*100):0;
+      const [tc,tl]=sisa===0?['danger','🚨 Habis']:sisa<200?['warn','⚠️ Menipis']:['aman','✅ Aman'];
+      const clr=sisa===0?'#ef4444':sisa<200?'#f59e0b':'var(--accent)';
+      html+=`<b>${j}</b> <span class="tag ${tc}">${tl}</span><br>
+        <span style="font-size:12px;color:var(--muted)">Masuk: ${fmt(s.masuk)} | Keluar: ${fmt(s.keluar)} | Sisa: <b style="color:#e9edef">${fmt(sisa)}</b></span>
+        <div class="sbar-wrap"><div class="sbar" style="width:${pct}%;background:${clr}"></div></div>`;
+    });
+  }
+  card(html);
+  qr([
+    {label:'➕ Tambah Stok Masuk', action:stokTambahUI},
+    {label:'➖ Catat Keluar',      action:stokKeluarUI},
+    {label:'🗑️ Reset Semua',      action:stokReset},
+    {label:'⬅️ Kembali ke Menu',  action:mainMenu},
+  ]);
+}
+
+function stokTambahUI(){
+  const w=document.createElement('div'); w.className='card';
+  w.innerHTML=`<b>➕ Tambah Stok Masuk</b>
+    <label class="lbl">Jenis Bibit</label><input type="text" id="sj" placeholder="contoh: SENGON POTTING">
+    <label class="lbl">Jumlah Masuk</label><input type="number" id="sm" placeholder="Jumlah bibit" min="1">`;
+  const btn=mkBtn('Simpan',()=>{
+    const j=document.getElementById('sj').value.trim().toUpperCase(),n=parseInt(document.getElementById('sm').value)||0;
+    if(!j||n<=0){bubble('Isi jenis bibit dan jumlah yang valid.');return;}
+    const s=LS.get('montanaStok',{});
+    if(!s[j]) s[j]={masuk:0,keluar:0};
+    s[j].masuk+=n; LS.set('montanaStok',s);
+    w.remove(); bubble(`✅ Stok <b>${j}</b> +${fmt(n)} bibit. Total masuk: ${fmt(s[j].masuk)}`);
+    showStokBibit();
+  });
+  w.appendChild(btn); appendEl(w);
+}
+
+function stokKeluarUI(){
+  const s=LS.get('montanaStok',{}),keys=Object.keys(s);
+  if(!keys.length){bubble('Belum ada stok. Tambahkan stok masuk terlebih dahulu.');return;}
+  const w=document.createElement('div'); w.className='card';
+  w.innerHTML=`<b>➖ Catat Bibit Keluar</b>
+    <label class="lbl">Jenis Bibit</label>
+    <select id="sjo">${keys.map(k=>`<option value="${k}">${k} (Sisa: ${fmt(Math.max(0,(s[k].masuk||0)-(s[k].keluar||0)))})</option>`).join('')}</select>
+    <label class="lbl">Jumlah Keluar</label><input type="number" id="smo" placeholder="Jumlah bibit keluar" min="1">`;
+  const btn=mkBtn('Catat',()=>{
+    const j=document.getElementById('sjo').value,n=parseInt(document.getElementById('smo').value)||0;
+    if(!n){bubble('Isi jumlah yang valid.');return;}
+    const st=LS.get('montanaStok',{});
+    const sisa=Math.max(0,(st[j].masuk||0)-(st[j].keluar||0));
+    if(n>sisa){bubble(`⚠️ Jumlah keluar (${fmt(n)}) melebihi sisa stok (${fmt(sisa)}).`);return;}
+    st[j].keluar=(st[j].keluar||0)+n; LS.set('montanaStok',st);
+    w.remove(); bubble(`✅ <b>${fmt(n)}</b> bibit <b>${j}</b> keluar. Sisa: <b>${fmt(sisa-n)}</b>`);
+    showStokBibit();
+  });
+  w.appendChild(btn); appendEl(w);
+}
+
+function stokReset(){
+  bubble('Yakin ingin menghapus semua data stok?');
+  qr([
+    {label:'✅ Ya, reset',action:()=>{LS.set('montanaStok',{});bubble('🗑️ Data stok dihapus.');showStokBibit();}},
+    {label:'❌ Batal',    action:showStokBibit},
+  ]);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FITUR BARU 2 — CATATAN LAPANGAN
+// ═══════════════════════════════════════════════════════════
+function showCatatan(){
+  const data=LS.get('montanaCatatan',[]);
+  if(!data.length){
+    card('<b>📝 Catatan Lapangan</b><br><i style="color:var(--muted)">Belum ada catatan.</i>');
+  } else {
+    card(`<b>📝 Catatan Lapangan</b><br><small style="color:var(--muted)">${data.length} catatan — menampilkan 5 terbaru</small>`);
+    data.slice(-5).reverse().forEach(c=>{
+      const el=document.createElement('div'); el.className='note-item';
+      el.innerHTML=`<div class="note-hd"><span class="note-cat">${c.kategori}</span><span style="display:flex;align-items:center;gap:6px"><span class="note-date">${c.tanggal}</span><button class="note-del" data-id="${c.id}">✕</button></span></div><div class="note-body">${c.isi}</div>`;
+      el.querySelector('.note-del').onclick=()=>{
+        LS.set('montanaCatatan',LS.get('montanaCatatan',[]).filter(x=>x.id!==c.id));
+        el.remove(); bubble('🗑️ Catatan dihapus.');
+      };
+      appendEl(el);
+    });
+  }
+  qr([
+    {label:'✏️ Buat Catatan Baru',  action:buatCatatan},
+    {label:'🗑️ Hapus Semua',        action:hapusSemuaCatatan},
+    {label:'⬅️ Kembali ke Menu',    action:mainMenu},
+  ]);
+}
+
+function buatCatatan(){
+  const w=document.createElement('div'); w.className='card';
+  w.innerHTML=`<b>✏️ Catatan Baru</b>
+    <label class="lbl">Kategori</label>
+    <select id="ck"><option>Penyiraman</option><option>Pemupukan</option><option>Hama & Penyakit</option><option>Kondisi Bibit</option><option>Cuaca</option><option>Distribusi</option><option>Lainnya</option></select>
+    <label class="lbl">Isi Catatan</label>
+    <textarea class="note-ta" id="ci" placeholder="Tulis catatan lapangan di sini…"></textarea>`;
+  const btn=mkBtn('Simpan',()=>{
+    const isi=document.getElementById('ci').value.trim(),kat=document.getElementById('ck').value;
+    if(!isi){bubble('Tulis isi catatan terlebih dahulu.');return;}
+    const d=LS.get('montanaCatatan',[]);
+    d.push({id:Date.now(),tanggal:nowFull(),kategori:kat,isi});
+    LS.set('montanaCatatan',d); w.remove();
+    bubble(`✅ Catatan <b>${kat}</b> tersimpan.`); showCatatan();
+  });
+  w.appendChild(btn); appendEl(w);
+}
+
+function hapusSemuaCatatan(){
+  bubble('Yakin hapus semua catatan?');
+  qr([
+    {label:'✅ Ya, hapus',action:()=>{LS.set('montanaCatatan',[]);bubble('🗑️ Semua catatan dihapus.');}},
+    {label:'❌ Batal',    action:showCatatan},
+  ]);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FITUR BARU 3 — DOSIS PUPUK PER FASE
+// ═══════════════════════════════════════════════════════════
+const DOSIS={
+  1:{label:'Fase 1 — Pembibitan (0–4 Minggu)',des:'Prioritas: perkecambahan & pembentukan akar.',
+     pupuk:[
+       {n:'Kompos / Pupuk kandang',d:'20–30% volume media',f:'Dicampur saat isi polybag'},
+       {n:'Inokulan Rhizobium',d:'1 sachet / 10 L air',f:'Siram 1× saat semai'},
+       {n:'NPK cair (3–4% N)',d:'0,5 g/L',f:'1×/minggu, mulai hari ke-10'},
+     ],ket:'Hindari pupuk N tinggi — memacu daun terlalu cepat, akar tidak optimal.'},
+  2:{label:'Fase 2 — Pertumbuhan (4–8 Minggu)',des:'Prioritas: pertumbuhan vegetatif & pembentukan daun.',
+     pupuk:[
+       {n:'NPK cair seimbang',d:'1 g/L',f:'Tiap 7–10 hari'},
+       {n:'Pupuk Organik Cair (POC)',d:'5 ml/L',f:'Tiap 14 hari'},
+       {n:'Urea (top dressing)',d:'0,5 g/polybag',f:'2× sebulan, tabur di pinggir media'},
+     ],ket:'Mulai perkenalkan sinar matahari penuh bertahap. Cek pH media 5,5–6,5.'},
+  3:{label:'Fase 3 — Penguatan (8–12 Minggu)',des:'Prioritas: memperkuat batang & aklimatisasi.',
+     pupuk:[
+       {n:'NPK 15-15-15',d:'1,5 g/polybag',f:'Tiap 2 minggu'},
+       {n:'KCl (Kalium Klorida)',d:'0,5 g/polybag',f:'1× per bulan'},
+       {n:'POC P-tinggi',d:'7 ml/L',f:'Tiap 14 hari untuk perakaran'},
+     ],ket:'Kurangi frekuensi penyiraman untuk hardening. Meningkatkan daya tahan bibit saat tanam lapangan.'},
+  4:{label:'Fase 4 — Pra-Tanam (>12 Minggu)',des:'Prioritas: aklimatisasi & kesiapan lapangan.',
+     pupuk:[
+       {n:'Pupuk N',d:'Hentikan',f:'2 minggu sebelum tanam'},
+       {n:'Dolomit',d:'1 sdm/polybag',f:'1× jika pH < 5,5'},
+       {n:'Mikoriza (jika tersedia)',d:'2 g/lubang akar',f:'1× saat pindah tanam'},
+     ],ket:'Standar siap tanam: tinggi ≥40 cm, diameter ≥5 mm, akar putih bersih.'},
+};
+
+function showDosisPupuk(){
+  bubble('<b>💊 Dosis Pupuk per Fase Pertumbuhan</b><br>Pilih fase bibit Anda:');
+  qr([
+    {label:'🌱 Fase 1: Pembibitan (0–4 Mgg)',  action:()=>dosisFase(1)},
+    {label:'🌿 Fase 2: Pertumbuhan (4–8 Mgg)', action:()=>dosisFase(2)},
+    {label:'💪 Fase 3: Penguatan (8–12 Mgg)',  action:()=>dosisFase(3)},
+    {label:'🌳 Fase 4: Pra-Tanam (>12 Mgg)',   action:()=>dosisFase(4)},
+    {label:'🧮 Hitung Kebutuhan Total',         action:dosisTotalUI},
+    {label:'⬅️ Kembali ke Menu',               action:mainMenu},
+  ]);
+}
+
+function dosisFase(n){
+  const d=DOSIS[n];
+  card(`<b>${d.label}</b><br><i style="color:var(--muted)">${d.des}</i>`);
+  const t=document.createElement('table'); t.className='table';
+  t.innerHTML=`<thead><tr><th>Pupuk</th><th>Dosis</th><th>Frekuensi</th></tr></thead><tbody>${d.pupuk.map(p=>`<tr><td>${p.n}</td><td>${p.d}</td><td>${p.f}</td></tr>`).join('')}</tbody>`;
+  appendEl(t);
+  card(`<b>📌 Catatan Penting:</b><br>${d.ket}`);
+  qr([
+    {label:'🧮 Hitung Kebutuhan Total',action:dosisTotalUI},
+    {label:'🔙 Pilih Fase Lain',       action:showDosisPupuk},
+    {label:'⬅️ Kembali ke Menu',       action:mainMenu},
+  ]);
+}
+
+function dosisTotalUI(){
+  const w=document.createElement('div'); w.className='card';
+  w.innerHTML=`<b>🧮 Hitung Total Kebutuhan Pupuk</b>
+    <label class="lbl">Jumlah polybag</label><input type="number" id="jp" value="1000">
+    <label class="lbl">Fase pertumbuhan</label>
+    <select id="fs"><option value="1">Fase 1 (0–4 Minggu)</option><option value="2">Fase 2 (4–8 Minggu)</option><option value="3">Fase 3 (8–12 Minggu)</option><option value="4">Fase 4 (>12 Minggu)</option></select>
+    <label class="lbl">Durasi (hari)</label><input type="number" id="dur" value="30">`;
+  const btn=mkBtn('Hitung',()=>{
+    const n=parseInt(document.getElementById('jp').value)||0,f=parseInt(document.getElementById('fs').value)||1,dur=parseInt(document.getElementById('dur').value)||30;
+    if(!n){bubble('Isi jumlah polybag yang valid.');return;}
+    const c={
+      1:[{n:'NPK cair',t:`${fmt(n*0.5/1000*(dur/7),2)} g`},{n:'Inokulan Rhizobium',t:`${Math.ceil(n/10)} sachet`}],
+      2:[{n:'NPK cair',t:`${fmt(n*1/1000*(dur/9),2)} g`},{n:'POC',t:`${fmt(n*5/1000*(dur/14),2)} ml`},{n:'Urea tabur',t:`${fmt(n*0.5*Math.floor(dur/15))} g`}],
+      3:[{n:'NPK 15-15-15',t:`${fmt(n*1.5*Math.floor(dur/14))} g`},{n:'KCl',t:`${fmt(n*0.5*Math.floor(dur/30))} g`},{n:'POC P-tinggi',t:`${fmt(n*7/1000*Math.floor(dur/14),2)} ml`}],
+      4:[{n:'Dolomit',t:`${fmt(n*5)} g = ${fmt(n*5/1000,2)} kg`},{n:'Mikoriza',t:`${fmt(n*2)} g = ${fmt(n*2/1000,2)} kg`}],
+    };
+    card(`<b>Estimasi Kebutuhan Pupuk</b><br>${fmt(n)} polybag × ${dur} hari (Fase ${f})<br>
+    <table class="table" style="margin-top:8px"><thead><tr><th>Pupuk</th><th>Total</th></tr></thead><tbody>${c[f].map(x=>`<tr><td>${x.n}</td><td><b>${x.t}</b></td></tr>`).join('')}</tbody></table>
+    <small style="color:var(--muted)">*Estimasi. Sesuaikan dengan kondisi aktual lapangan.</small>`);
+  });
+  w.appendChild(btn); appendEl(w);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FITUR BARU 4 — TROUBLESHOOTING CEPAT
+// ═══════════════════════════════════════════════════════════
+const TROUBLE={
+  penyiraman:{t:'💧 Masalah Penyiraman',
+    g:'Tanah terlalu kering (pecah-pecah) atau terlalu basah (berlumpur, berbau apek).',
+    p:['Jadwal penyiraman tidak teratur','Lubang drainase polybag tersumbat','Cuaca ekstrem'],
+    s:['Siram 2×/hari: pagi 07.00–09.00 & sore 16.00–17.00','Buat 3–5 lubang di dasar polybag','Saat hujan deras: naungi atau kurangi frekuensi','Tes jari: tancap 2 cm — lembap = cukup, kering = siram']},
+  lambat:{t:'🌱 Pertumbuhan Lambat',
+    g:'Bibit tidak tumbuh dalam 2+ minggu, daun kecil, batang kurus.',
+    p:['Kekurangan nutrisi N','Akar terkekang di polybag terlalu kecil','pH media tidak sesuai','Kurang cahaya'],
+    s:['Tambah NPK cair 1 g/L, siram merata','Pindah ke polybag 20×25 cm','Koreksi pH ke 5,5–6,5 dengan dolomit','Pindah ke area sinar pagi 4–6 jam/hari']},
+  kuning:{t:'🟡 Daun Pucat / Menguning',
+    g:'Daun tua menguning dari bawah ke atas, atau seluruh daun pucat seragam.',
+    p:['Defisiensi N (menguning dari bawah)','Defisiensi Fe/Mg (urat tetap hijau)','Overwatering','pH media terlalu tinggi (>7)'],
+    s:['Daun bawah kuning → Urea 0,5 g/polybag','Urat hijau kuning → FeSO4 0,1%','Cek drainase — genangan >1 jam berbahaya','pH tinggi: tambah belerang pertanian 1 g/polybag']},
+  rebah:{t:'🪵 Batang Lemah / Bibit Rebah',
+    g:'Batang mudah patah, tidak bisa tegak sendiri saat angin.',
+    p:['Kekurangan Kalium','Jarak bibit terlalu rapat (etiolasi)','Media terlalu ringan','Kurang sinar matahari'],
+    s:['Tambah KCl 0,5 g/polybag tiap 2 minggu','Atur jarak bibit minimal 10–15 cm','Tambah pasir kasar 20% ke media','Kurangi naungan secara bertahap']},
+  jamur:{t:'🌫️ Media / Permukaan Berjamur',
+    g:'Lapisan putih atau hijau di permukaan media, berbau apek.',
+    p:['Kelembapan berlebihan','Kurang sirkulasi udara','Bahan organik berlebih di permukaan'],
+    s:['Kerik lapisan jamur, buang jauh dari nursery','Kurangi penyiraman 1–2 hari','Tabur dolomit tipis di permukaan','Beri jarak antar polybag untuk sirkulasi']},
+  panas:{t:'🌡️ Bibit Kepanasan / Terbakar',
+    g:'Tepi daun mengering/coklat, layu di siang hari meski media lembap.',
+    p:['Paparan sinar langsung terlalu panjang','Suhu >35°C tanpa naungan','Radiasi panas dari atap seng'],
+    s:['Pasang shading net 30–50% untuk bibit ≤2 bulan','Lakukan misting daun di siang hari','Pindah ke area naungan saat puncak panas','Bibit ≥3 bulan boleh terkena sinar penuh bertahap']},
+};
+
+function showTroubleshooting(){
+  bubble('<b>🔧 Troubleshooting Cepat</b><br>Pilih masalah yang dihadapi:');
+  qr([
+    {label:'💧 Masalah Penyiraman', action:()=>trouble('penyiraman')},
+    {label:'🌱 Pertumbuhan Lambat', action:()=>trouble('lambat')},
+    {label:'🟡 Daun Pucat/Kuning', action:()=>trouble('kuning')},
+    {label:'🪵 Batang Lemah/Rebah',action:()=>trouble('rebah')},
+    {label:'🌫️ Media Berjamur',    action:()=>trouble('jamur')},
+    {label:'🌡️ Bibit Kepanasan',   action:()=>trouble('panas')},
+    {label:'⬅️ Kembali ke Menu',   action:mainMenu},
+  ]);
+}
+
+function trouble(code){
+  const d=TROUBLE[code];
+  card(`<b>${d.t}</b><br><span style="color:var(--muted);font-size:12px">Gejala: ${d.g}</span><br><br>
+  <b>Kemungkinan Penyebab:</b><br>${d.p.map((x,i)=>`${i+1}. ${x}`).join('<br>')}<br><br>
+  <b>✅ Solusi:</b><br>${d.s.map(x=>`• ${x}`).join('<br>')}`);
+  qr([
+    {label:'🔙 Troubleshooting Lain',action:showTroubleshooting},
+    {label:'🐛 Analisis Hama',       action:showHamaPenyakit},
+    {label:'⬅️ Kembali ke Menu',     action:mainMenu},
+  ]);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FITUR BARU 5 — SARAN PENGEMBANGAN
+// ═══════════════════════════════════════════════════════════
+function showSaranPengembangan(){
+  const w=document.createElement('div'); w.className='sbox';
+  w.innerHTML=`<div class="sbox-title">💡 Roadmap Pengembangan Montana AI</div>
+    <div class="sbox-item"><b>1. PWA & Mode Offline</b><br>Service Worker agar Montana AI bisa diakses tanpa internet — penting untuk nursery di area sinyal lemah.</div>
+    <div class="sbox-item"><b>2. Sinkronisasi Google Sheets</b><br>Hubungkan stok bibit & catatan lapangan ke Google Sheets via endpoint doPost/doGet yang sudah ada di GAS.</div>
+    <div class="sbox-item"><b>3. Diagnosis Hama via Foto</b><br>Integrasikan Gemini Vision API untuk analisis otomatis dari foto daun/akar yang diambil petugas lapangan.</div>
+    <div class="sbox-item"><b>4. Notifikasi Penyiraman</b><br>Web Push Notification + Service Worker untuk mengingatkan jadwal siram/pupuk secara otomatis.</div>
+    <div class="sbox-item"><b>5. Ekspor PDF Laporan</b><br>Tombol Print/Export di Laporan & Biaya menggunakan window.print() dengan @media print CSS.</div>
+    <div class="sbox-item"><b>6. Multi-pengguna</b><br>Manfaatkan sistem autentikasi nomor HP di GAS untuk menyimpan catatan & stok per pengguna.</div>
+    <div class="sbox-item"><b>7. Grafik Tren Stok</b><br>Chart.js untuk memvisualisasikan tren masuk-keluar bibit per bulan langsung di antarmuka chat.</div>
+    <div class="sbox-item"><b>8. QR Scanner Bawaan</b><br>Integrasikan jsQR untuk scan kode verifikasi surat jalan — sesuai sistem kode verifikasi di GAS Anda.</div>
+    <div class="sbox-item"><b>9. Asisten Suara</b><br>Web Speech API untuk input perintah suara — berguna bagi petugas yang tangannya kotor saat bekerja.</div>
+    <div class="sbox-item"><b>10. Light Mode Toggle</b><br>Tema terang untuk outdoor — layar lebih mudah dibaca di bawah sinar matahari terik.</div>`;
+  appendEl(w); back();
+}
+
+// ─── INPUT BEBAS ───────────────────────────────────────────
+sendBtn.onclick=()=>{
+  const v=inp.value.trim(); if(!v) return;
+  bubble(v,'user'); inp.value='';
+  const q=v.toLowerCase();
+  if(q.includes('kalkulator')||q.includes('hitung'))           return showKalkulatorMenu();
+  if(q.includes('cuaca'))                                      return weatherRantau();
+  if(q.includes('hama')||q.includes('penyakit'))               return showHamaPenyakit();
+  if(q.includes('jadwal')||q.includes('monitoring'))           return showMonitoring();
+  if(q.includes('stok'))                                       return showStokBibit();
+  if(q.includes('catatan')||q.includes('lapangan'))            return showCatatan();
+  if(q.includes('pupuk')||q.includes('dosis')||q.includes('fase')) return showDosisPupuk();
+  if(q.includes('trouble')||q.includes('masalah'))             return showTroubleshooting();
+  if(q.includes('saran')||q.includes('pengembangan'))          return showSaranPengembangan();
+  if(q.includes('bibit'))                                      return showTentangSengon();
+  if(q.includes('menu')||q.includes('mulai'))                  return mainMenu();
+  bubble('Ketik <b>menu</b> untuk semua fitur, atau coba: <b>stok, catatan, pupuk, cuaca, hama, kalkulator, troubleshooting</b>.');
+};
+inp.addEventListener('keypress',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendBtn.click();} });
+
+// ─── START ─────────────────────────────────────────────────
+setTimeout(()=>{ bubble('Selamat datang di <b>Montana AI v2</b> 🌱<br>Panduan Sengon Potting — PT Energi Batubara Lestari'); mainMenu(); },200);
+</script>
+</body>
+</html>

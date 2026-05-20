@@ -20,7 +20,7 @@ export type ApiResponse = {
 
 // === API ===
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbxsNEYdTVX5mvIJTcMz1WfzIFjonksMxYaRYTR7ZIQy4Gv7S3ajjnOd0KQmHiTjJ0_z/exec";
+  "https://script.google.com/macros/s/AKfycbzaDhpB0PQK2P1IgvglL7pw_1hDgVRzrF6rOiyuNvyrRsi6mp8fMsJCBk5Dj58IMWE/exec";
 
 export async function fetchData(): Promise<Row[]> {
   // Google Apps Script redirects (302) — fetch must follow redirects
