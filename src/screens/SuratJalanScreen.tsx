@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Printer, Eye, Send, CheckCircle, ExternalLink } from 'lucide-react';
 import DocumentPreview from '../components/DocumentPreview';
@@ -57,7 +57,7 @@ export function SuratJalanScreen() {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  // Nomor surat — gunakan nilai dari server (row.nomorSurat) agar cocok dengan spreadsheet saat upload ke Drive
+  // Nomor surat - gunakan nilai dari server (row.nomorSurat) agar cocok dengan spreadsheet saat upload ke Drive
   const nomorSurat: string = row ? (row.nomorSurat || generateNomorSurat(row, rowIndex)) : '';
   // const doc = nomorSurat ? documents.find((d) => d.nomor === nomorSurat) : undefined;
 
@@ -87,7 +87,7 @@ export function SuratJalanScreen() {
     fetchApiData().then((rows) => {
       setAllRows(rows);
 
-      // Jika preview dari form input "” buat row virtual dari query params
+      // Jika preview dari form input "" buat row virtual dari query params
       if (isFormPreview) {
         const formRow: ApiRow = {
           tanggal: searchParams.get('tanggal') || new Date().toISOString().split('T')[0],
@@ -122,7 +122,7 @@ export function SuratJalanScreen() {
   // Generate QR code with verification code
   useEffect(() => {
     if (!row || !kodeVerifikasi) return;
-    // QR berisi kode verifikasi saja "” hanya bisa diverifikasi lewat scanner di aplikasi
+    // QR berisi kode verifikasi saja "" hanya bisa diverifikasi lewat scanner di aplikasi
     const qrContent = `VERIFY:${kodeVerifikasi}`;
     QRCode.toDataURL(qrContent, {
       width: 140,
@@ -175,7 +175,7 @@ export function SuratJalanScreen() {
   // ...hapus logic approval preview...
   // ...hapus variabel tidak terpakai...
 
-  // === PDF Generation "” delegates to canonical generateSuratJalanPdf ===
+  // === PDF Generation "" delegates to canonical generateSuratJalanPdf ===
   const generatePDF = useCallback(async (draft: boolean) => {
     if (!row) return;
     setGenerating(true);
@@ -208,7 +208,7 @@ export function SuratJalanScreen() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Upload ke Drive di background — hanya untuk dokumen final
+      // Upload ke Drive di background - hanya untuk dokumen final
       if (!draft) uploadPdfToDrive(blob, filename, nomorSurat).catch(() => {});
     } catch (err) {
       console.error('PDF generation error:', err);
@@ -252,7 +252,7 @@ export function SuratJalanScreen() {
         </div>
       </div>
 
-      {/* Preview Card "” Surat Jalan */}
+      {/* Preview Card "" Surat Jalan */}
       <div ref={previewRef} className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden relative">
         {/* DRAFT Watermark Overlay */}
         {isDraft && (
@@ -275,7 +275,7 @@ export function SuratJalanScreen() {
           <div className="text-white">
             <p className="font-bold text-sm leading-tight">{COMPANY_NAME}</p>
             <p className="text-[11px] text-emerald-100">
-              {COMPANY_UNIT} "” {COMPANY_ADDRESS}
+              {COMPANY_UNIT} "" {COMPANY_ADDRESS}
             </p>
           </div>
         </div>
@@ -329,7 +329,7 @@ export function SuratJalanScreen() {
           {/* Stock info */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
             <span className="text-xs text-blue-700">
-              ðŸ“¦ Sisa stok <strong>{row.bibit}</strong> setelah distribusi:{' '}
+              ðŸ"¦ Sisa stok <strong>{row.bibit}</strong> setelah distribusi:{' '}
               <strong>{stokSetelah.toLocaleString('id-ID')}</strong> polybag
             </span>
           </div>
@@ -351,7 +351,7 @@ export function SuratJalanScreen() {
                 <div className="relative flex items-center justify-center w-full" style={{ height: '24px' }}>
                   <div className="absolute inset-x-0 border-b border-gray-300" style={{ top: '50%' }} />
                   <div className="relative z-10 w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center">
-                    <span className="text-white text-[9px] font-bold leading-none">âœ“</span>
+                    <span className="text-white text-[9px] font-bold leading-none">âœ"</span>
                   </div>
                 </div>
                 <p className="text-[9px] font-bold text-emerald-700 text-center leading-tight">{name}</p>
@@ -360,49 +360,52 @@ export function SuratJalanScreen() {
             ))}
           </div>
 
-          {/* QR Code + Footer — ganti dengan bukti penerimaan jika sudah Terkirim */}
-          <div className=”border-t border-gray-200 pt-4”>
+          {/* QR Code + Footer: ganti dengan bukti penerimaan jika sudah Terkirim */}
+          <div className="border-t border-gray-200 pt-4">
             {row?.statusKirim === 'Terkirim' && row?.linkPdf ? (
-              <div className=”flex items-center gap-3 p-3 rounded-xl bg-teal-50 border border-teal-200”>
-                <CheckCircle className=”w-8 h-8 text-teal-600 shrink-0” />
-                <div className=”flex-1 min-w-0”>
-                  <p className=”text-[11px] font-bold text-teal-800”>Bibit Sudah Diterima</p>
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-teal-50 border border-teal-200">
+                <CheckCircle className="w-8 h-8 text-teal-600 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold text-teal-800">Bibit Sudah Diterima</p>
                   {row.namaPenerima && (
-                    <p className=”text-[10px] text-teal-600 mt-0.5”>Diterima oleh: <strong>{row.namaPenerima}</strong></p>
+                    <p className="text-[10px] text-teal-600 mt-0.5">
+                      {'Diterima oleh: '}<strong>{row.namaPenerima}</strong>
+                    </p>
                   )}
                   {row.tanggalTerima && (
-                    <p className=”text-[10px] text-teal-600”>
+                    <p className="text-[10px] text-teal-600">
                       {new Date(row.tanggalTerima).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                     </p>
                   )}
                   <a
                     href={row.linkPdf}
-                    target=”_blank”
-                    rel=”noopener noreferrer”
-                    className=”inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-teal-700 underline underline-offset-2”
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-teal-700 underline underline-offset-2"
                   >
-                    <ExternalLink className=”w-3 h-3” /> Lihat PDF Bukti Penerimaan
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Lihat PDF Bukti Penerimaan</span>
                   </a>
                 </div>
               </div>
             ) : (
-              <div className=”flex items-start gap-3”>
+              <div className="flex items-start gap-3">
                 {qrDataUrl && (
-                  <img src={qrDataUrl} alt=”QR Verification” className=”w-20 h-20 rounded-lg border border-gray-200” />
+                  <img src={qrDataUrl} alt="QR Verification" className="w-20 h-20 rounded-lg border border-gray-200" />
                 )}
-                <div className=”flex-1 space-y-1”>
-                  <p className=”text-[10px] font-semibold text-gray-700”>Scan QR Code untuk verifikasi</p>
-                  <p className=”text-[9px] text-gray-400”>
+                <div className="flex-1 space-y-1">
+                  <p className="text-[10px] font-semibold text-gray-700">Scan QR Code untuk verifikasi</p>
+                  <p className="text-[9px] text-gray-400">
                     Verifikasi keaslian dokumen ini melalui fitur Scanner di aplikasi Smart Nursery.
                   </p>
                   {kodeVerifikasi && kodeVerifikasi !== 'PREVIEW' && (
-                    <p className=”text-[9px] font-mono text-gray-400 mt-0.5”>
-                      Kode: {kodeVerifikasi}
+                    <p className="text-[9px] font-mono text-gray-400 mt-0.5">
+                      {'Kode: '}{kodeVerifikasi}
                     </p>
                   )}
-                  <div className=”pt-1.5”>
-                    <p className=”text-[8px] text-gray-300”>Dicetak otomatis oleh Montana AI Engine</p>
-                    <p className=”text-[8px] text-gray-300”>{COMPANY_NAME} — {COMPANY_UNIT}</p>
+                  <div className="pt-1.5">
+                    <p className="text-[8px] text-gray-300">Dicetak otomatis oleh Montana AI Engine</p>
+                    <p className="text-[8px] text-gray-300">{COMPANY_NAME} - {COMPANY_UNIT}</p>
                   </div>
                 </div>
               </div>
@@ -415,7 +418,7 @@ export function SuratJalanScreen() {
       {isDraft && (
         <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-300">
           <Eye className="w-4 h-4 text-amber-600" />
-          <span className="text-sm font-semibold text-amber-800">Mode Draft "” Review sebelum kirim</span>
+          <span className="text-sm font-semibold text-amber-800">Mode Draft "" Review sebelum kirim</span>
         </div>
       )}
 
@@ -457,7 +460,7 @@ export function SuratJalanScreen() {
         ) : (
           <div className="space-y-2">
             <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 mb-2">
-              <span className="text-xs font-semibold text-emerald-700">âœ… Dokumen Final "” Siap Distribusi</span>
+              <span className="text-xs font-semibold text-emerald-700">âœ… Dokumen Final "" Siap Distribusi</span>
             </div>
             <div className="flex gap-2">
               <Button
