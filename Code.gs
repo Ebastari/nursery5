@@ -208,6 +208,24 @@ function hNum(row, map, key) {
   return isNaN(n) ? 0 : n;
 }
 
+// Cari kolom "Merged Doc URL - Aplikasi QR" (dari Autocrat) sebagai fallback linkPdf
+function hGetMergedDoc(row, map) {
+  // Coba exact key dulu
+  if (map['mergeddocurlaplikasiqr'] !== undefined) {
+    var v = row[map['mergeddocurlaplikasiqr']];
+    if (v && String(v).trim().startsWith('http')) return String(v).trim();
+  }
+  // Fallback: cari key yang mengandung "mergeddoc" dan "url"
+  var keys = Object.keys(map);
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i].indexOf('mergeddoc') >= 0 && keys[i].indexOf('url') >= 0) {
+      var v2 = row[map[keys[i]]];
+      if (v2 && String(v2).trim().startsWith('http')) return String(v2).trim();
+    }
+  }
+  return '';
+}
+
 function handleGetData() {
   var sheet = getSheet(SHEET_DATA);
   if (!sheet) return jsonOk({ data: [], count: 0, timestamp: new Date().toISOString() });
@@ -240,7 +258,7 @@ function handleGetData() {
       approvedAt:     hGet(r, m, 'approvedat'),
       statusKirim:    hGet(r, m, 'statuskirim'),
       kodeVerifikasi: hGet(r, m, 'kodeverifikasi'),
-      linkPdf:        hGet(r, m, 'linkpdf'),
+      linkPdf:        hGet(r, m, 'linkpdf') || hGetMergedDoc(r, m),
       dibuatOleh:     hGet(r, m, 'dibuatoleh') || hGet(r, m, 'dibuatoleh_'),
       driver:         hGet(r, m, 'driver'),
       statusTerima:   hGet(r, m, 'statusterima'),
