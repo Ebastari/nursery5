@@ -48,12 +48,18 @@ function jsonErr(msg) {
 // ============================================================
 // SHEET HELPER
 // ============================================================
+var SPREADSHEET_ID = '1GjXiFLcjZbiFUkIofM-CaLtt589BjOE5zwkgE51qIKk';
+
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
 function getSheet(name) {
-  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  return getSpreadsheet().getSheetByName(name);
 }
 
 function ensureSheet(name, headers) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);
