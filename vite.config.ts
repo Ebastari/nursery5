@@ -5,7 +5,7 @@ import type { Connect } from 'vite'
 import https from 'https'
 import http from 'http'
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzVW4Hc61slYJhT8PRrTqrcprxhSmEe60B7e7PQzET4GX8_u3QFNLcJKRRJGojss8I/exec'
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyGp8v0O4yW3BdLBCSDVBE9g1JPBmiFPDNsnNczypOQ0PCJJsqdsI1JCtSUkrztY-VZ/exec'
 
 // Follow GAS redirect chain server-side, returning final JSON
 function gasRequest(method: string, body: string | null): Promise<string> {
