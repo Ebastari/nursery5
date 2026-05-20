@@ -21,7 +21,7 @@ type ScreenMode = 'verify' | 'lapangan';
 
 export function VerifyScreen() {
   const navigate = useNavigate();
-  const { isAdmin } = useStore();
+  const { isAdmin, refreshAll } = useStore();
 
   // Mode — lapangan langsung terbuka untuk admin
   const [mode, setMode] = useState<ScreenMode>('verify');
@@ -100,6 +100,7 @@ export function VerifyScreen() {
       await confirmDelivery({ kodeVerifikasi: kode, namaPenerima: confirmName.trim(), jumlahDiterima: confirmQty });
       setConfirmSuccess(true);
       setShowConfirmForm(false);
+      refreshAll(); // perbarui notifikasi & statusKirim di seluruh app
     } catch (err) {
       setConfirmError(err instanceof Error ? err.message : 'Konfirmasi gagal');
     } finally {
