@@ -334,7 +334,7 @@ const DashboardScreen: React.FC = () => {
                   <div className="text-sm font-bold text-gray-900">Notifikasi Pengiriman</div>
                 </div>
                 <span className="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded-full">
-                  {stats.distribusi.filter(d => d.statusTerima !== 'diterima').length} menunggu
+                  {stats.distribusi.filter(d => d.statusTerima.toLowerCase() !== 'diterima').length} menunggu
                 </span>
               </div>
 
@@ -347,8 +347,8 @@ const DashboardScreen: React.FC = () => {
                 <>
                   <div className="space-y-2">
                     {(showAllDistribusi ? stats.distribusi : stats.distribusi.slice(0, 5)).map((item, i) => (
-                      <div key={i} className={`rounded-xl border overflow-hidden ${item.statusTerima === 'diterima' ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-white'}`}>
-                        {item.statusTerima === 'diterima' ? (
+                      <div key={i} className={`rounded-xl border overflow-hidden ${item.statusTerima.toLowerCase() === 'diterima' ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-white'}`}>
+                        {item.statusTerima.toLowerCase() === 'diterima' ? (
                           <div className="p-3">
                             <div className="flex items-center gap-2 mb-1">
                               <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -369,7 +369,9 @@ const DashboardScreen: React.FC = () => {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 mb-1">
                                   <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">Menunggu Konfirmasi</span>
+                                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">
+                                    {item.statusTerima ? item.statusTerima : 'Menunggu Konfirmasi'}
+                                  </span>
                                 </div>
                                 <p className="text-xs font-bold text-gray-900">{item.bibit}</p>
                                 <p className="text-[10px] text-gray-500">{item.keluar.toLocaleString('id-ID')} polybag · {formatTanggal(item.tanggal)}</p>
